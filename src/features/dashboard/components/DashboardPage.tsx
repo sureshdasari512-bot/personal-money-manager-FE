@@ -1,14 +1,24 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BalanceBreakdown } from '../../../components/BalanceBreakdown';
 import { PageHeader } from '../../../components/PageHeader';
+import { SegmentedTabs } from '../../../components/SegmentedTabs';
 import { Spinner } from '../../../components/Spinner';
-import { formatCurrency } from '../../../lib/formatCurrency';
+import { tokens } from '../../../lib/design-tokens';
 import { useDashboard } from '../hooks/useDashboard';
+import { DashboardDueList } from './DashboardDueList';
+import { DashboardPeopleList } from './DashboardPeopleList';
+
+type AttentionTab = 'overdue' | 'upcoming';
+type PeopleTab = 'theyOweYou' | 'youOweThem';
 
 /**
- * Net-position home screen. Net balance is the most prominent figure.
+ * Home screen: lend vs borrow totals, then final amount, due lists, and people.
  */
 export function DashboardPage() {
   const { dashboard, isLoading, error } = useDashboard();
+  const [attentionTab, setAttentionTab] = useState<AttentionTab>('overdue');
+  const [peopleTab, setPeopleTab] = useState<PeopleTab>('theyOweYou');
 
   if (isLoading) {
     return <Spinner />;
@@ -19,49 +29,70 @@ export function DashboardPage() {
   }
 
   const net = dashboard.totalOwedToUserCents - dashboard.totalUserOwesCents;
+  const theyOweYou = dashboard.people.filter((person) => person.netBalanceCents > 0);
+  const youOweThem = dashboard.people.filter((person) => person.netBalanceCents < 0);
 
   return (
     <main>
       <PageHeader
         eyebrow="Overview"
         title="Your balance"
-        description="What people owe you, minus what you owe them."
+        description="Lent and borrowed are shown separately. Final amount is after both sides."
       />
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-slate-500">Net balance</p>
-        <p className="mt-1 text-4xl font-semibold tracking-tight text-slate-900">
-          {formatCurrency(net)}
-        </p>
-      </section>
-      <dl className="mt-4 grid grid-cols-2 gap-3">
-        <Stat label="Owed to you" value={formatCurrency(dashboard.totalOwedToUserCents)} />
-        <Stat label="You owe" value={formatCurrency(dashboard.totalUserOwesCents)} />
-        <Stat label="Overdue" value={String(dashboard.overdueCount)} />
-        <Stat label="Due in 7 days" value={String(dashboard.upcomingDueCount)} />
-      </dl>
-      <p className="mt-6">
-        <Link
-          to="/people"
-          className="text-sm font-semibold text-blue-700 hover:text-blue-800"
-        >
-          Manage people
-        </Link>
-      </p>
-    </main>
-  );
-}
+      <BalanceBreakdown
+        theyOweYouCents={dashboard.totalOwedToUserCents}
+        youOweThemCents={dashboard.totalUserOwesCents}
+        netBalanceCents={net}
+        scope="overall"
+      />
 
-/**
- * Supporting dashboard stat — visually smaller than net balance.
- *
- * @param label - Stat name
- * @param value - Formatted value
- */
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <dt className="text-sm text-slate-500">{label}</dt>
-      <dd className="mt-1 text-lg font-semibold text-slate-900">{value}</dd>
-    </div>
+      <section className="mt-8">
+        <h2 className="mb-3 text-lg font-semibold" style={{ color: tokens.color.ink }}>
+          Needs attention
+        </h2>
+        <SegmentedTabs
+          ariaLabel="Due items"
+          value={attentionTab}
+          options={[
+            { id: 'overdue', label: 'Overdue', count: dashboard.overdueCount },
+            { id: 'upcoming', label: 'Due in 7 days', count: dashboard.upcomingDueCount },
+          ]}
+          onChange={setAttentionTab}
+        />
+        <div className="mt-3">
+          {attentionTab === 'overdue' ? (
+            <DashboardDueList items={dashboard.overdue} variant="overdue" />
+          ) : (
+            <DashboardDueList items={dashboard.upcomingDue} variant="upcoming" />
+          )}
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <h2 className="text-lg font-semibold" style={{ color: tokens.color.ink }}>
+            People
+          </h2>
+          <Link to="/people" className="text-sm font-semibold text-blue-700 hover:text-blue-800">
+            All people
+          </Link>
+        </div>
+        <SegmentedTabs
+          ariaLabel="Open balances"
+          value={peopleTab}
+          options={[
+            { id: 'theyOweYou', label: 'They owe you', count: theyOweYou.length },
+            { id: 'youOweThem', label: 'You owe them', count: youOweThem.length },
+          ]}
+          onChange={setPeopleTab}
+        />
+        <div className="mt-3">
+          <DashboardPeopleList
+            people={peopleTab === 'theyOweYou' ? theyOweYou : youOweThem}
+            side={peopleTab}
+          />
+        </div>
+      </section>
+    </main>
   );
 }

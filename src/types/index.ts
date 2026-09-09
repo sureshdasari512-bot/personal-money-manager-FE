@@ -92,11 +92,31 @@ export interface PersonLedger {
   netBalanceCents: number;
 }
 
+export interface DashboardPersonBalance {
+  personId: string;
+  personName: string;
+  netBalanceCents: number;
+}
+
+export interface DashboardDueItem {
+  transactionId: string;
+  personId: string;
+  personName: string;
+  type: TransactionType;
+  amountCents: number;
+  outstandingCents: number;
+  transactionDate: string;
+  dueDate: string;
+}
+
 export interface DashboardSummary {
   totalOwedToUserCents: number;
   totalUserOwesCents: number;
   overdueCount: number;
   upcomingDueCount: number;
+  people: DashboardPersonBalance[];
+  overdue: DashboardDueItem[];
+  upcomingDue: DashboardDueItem[];
 }
 
 export type InvitationStatus = 'pending' | 'accepted' | 'revoked' | 'expired';

@@ -28,7 +28,14 @@ export function App() {
             </AuthGuard>
           }
         >
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RoleGuard allowedRoles={['user']}>
+                <DashboardPage />
+              </RoleGuard>
+            }
+          />
           <Route
             path="/people"
             element={

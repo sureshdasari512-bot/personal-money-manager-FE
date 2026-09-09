@@ -85,8 +85,8 @@ export function TransactionForm({
           value={type}
           onChange={(event) => setType(event.target.value as TransactionType)}
         >
-          <option value="lend">Lend</option>
-          <option value="borrow">Borrow</option>
+          <option value="lend">I lent them money</option>
+          <option value="borrow">I borrowed money from them</option>
         </select>
         {fieldErrors.type ? <p className="text-sm text-red-600">{fieldErrors.type}</p> : null}
       </label>

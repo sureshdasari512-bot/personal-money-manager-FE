@@ -67,7 +67,7 @@ export function TransactionRow({
             />
             {overdue ? <StatusBadge label="Overdue" tone="danger" /> : null}
             <StatusBadge
-              label={transaction.type === 'lend' ? 'Lend' : 'Borrow'}
+              label={transaction.type === 'lend' ? 'They owe you' : 'You owe them'}
               tone={transaction.type === 'lend' ? 'success' : 'info'}
               emphasis="secondary"
             />

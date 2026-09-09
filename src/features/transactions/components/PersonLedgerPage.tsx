@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { BalanceBreakdown } from '../../../components/BalanceBreakdown';
 import { Button } from '../../../components/Button';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { EmptyState } from '../../../components/EmptyState';
 import { FormError } from '../../../components/FormError';
 import { Modal } from '../../../components/Modal';
 import { PageHeader } from '../../../components/PageHeader';
+import { SegmentedTabs } from '../../../components/SegmentedTabs';
 import { Spinner } from '../../../components/Spinner';
 import { totalsByAllocationId } from '../../../lib/allocationSplit';
-import { formatCurrency } from '../../../lib/formatCurrency';
+import { outstandingByType } from '../../../lib/outstandingByType';
 import type { LedgerTransaction, Transaction } from '../../../types';
 import { toApiError, type FieldErrors } from '../../../types/errors';
 import { usePerson } from '../../people/hooks/usePerson';
@@ -29,6 +31,8 @@ import type {
 import { RepaymentForm } from './RepaymentForm';
 import { TransactionForm } from './TransactionForm';
 import { TransactionRow } from './TransactionRow';
+
+type LedgerTab = 'all' | 'lend' | 'borrow';
 
 /**
  * Person-level ledger: history, net balance, transactions, and repayments.
@@ -54,6 +58,7 @@ export function PersonLedgerPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [ledgerTab, setLedgerTab] = useState<LedgerTab>('all');
 
   if (!personId) {
     return <p className="text-sm text-red-600">Missing person.</p>;
@@ -258,10 +263,15 @@ export function PersonLedgerPage() {
   }
 
   const initialValues = editingTransaction ? toFormValues(editingTransaction) : undefined;
-  const outstandingLendCents = transactions
-    .filter((transaction) => transaction.type === 'lend' && transaction.outstandingCents > 0)
-    .reduce((sum, transaction) => sum + transaction.outstandingCents, 0);
+  const { theyOweYouCents, youOweThemCents } = outstandingByType(transactions);
+  const outstandingLendCents = theyOweYouCents;
   const allocationTotals = totalsByAllocationId(transactions);
+  const lendCount = transactions.filter((transaction) => transaction.type === 'lend').length;
+  const borrowCount = transactions.filter((transaction) => transaction.type === 'borrow').length;
+  const visibleTransactions =
+    ledgerTab === 'all'
+      ? transactions
+      : transactions.filter((transaction) => transaction.type === ledgerTab);
 
   return (
     <main>
@@ -273,7 +283,7 @@ export function PersonLedgerPage() {
       <PageHeader
         eyebrow="Ledger"
         title={person?.name ?? 'Person'}
-        description="Lend and borrow history for this contact."
+        description="Lent and borrowed are shown separately. Final amount is after both sides."
         action={
           <div className="flex flex-wrap gap-2">
             {outstandingLendCents > 0 ? (
@@ -285,41 +295,62 @@ export function PersonLedgerPage() {
           </div>
         }
       />
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-slate-500">Net balance</p>
-        <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">
-          {formatCurrency(netBalanceCents)}
-        </p>
-        <p className="mt-2 text-sm text-slate-500">
-          Positive means they owe you. Negative means you owe them.
-        </p>
-      </section>
+      <div className="mb-6">
+        <BalanceBreakdown
+          theyOweYouCents={theyOweYouCents}
+          youOweThemCents={youOweThemCents}
+          netBalanceCents={netBalanceCents}
+          scope="person"
+        />
+      </div>
 
       <FormError message={listError} />
 
       {transactions.length === 0 ? (
         <EmptyState
           title="No transactions yet"
-          description="Add your first lend or borrow for this person."
+          description="Add the first amount you lent or borrowed with this person."
           action={<Button onClick={openCreate}>Add transaction</Button>}
         />
       ) : (
         <div className="flex flex-col gap-4">
-          {transactions.map((transaction) => (
-            <TransactionRow
-              key={transaction.id}
-              transaction={transaction}
-              allocationTotals={allocationTotals}
-              isDeleting={deletingId === transaction.id}
-              deletingRepaymentId={deletingRepaymentId}
-              onEdit={openEdit}
-              onDelete={setTransactionToDelete}
-              onAddRepayment={openRepayment}
-              onDeleteRepayment={(row, repayment) => {
-                setRepaymentToDelete({ transaction: row, repaymentId: repayment.id });
-              }}
+          <SegmentedTabs
+            ariaLabel="Ledger entries"
+            value={ledgerTab}
+            options={[
+              { id: 'all', label: 'All', count: transactions.length },
+              { id: 'lend', label: 'They owe you', count: lendCount },
+              { id: 'borrow', label: 'You owe them', count: borrowCount },
+            ]}
+            onChange={setLedgerTab}
+          />
+          {visibleTransactions.length === 0 ? (
+            <EmptyState
+              title={ledgerTab === 'lend' ? 'No money lent' : 'No money borrowed'}
+              description={
+                ledgerTab === 'lend'
+                  ? 'Amounts you lent this person will show here.'
+                  : 'Amounts you borrowed from this person will show here.'
+              }
+              action={<Button onClick={openCreate}>Add transaction</Button>}
             />
-          ))}
+          ) : (
+            visibleTransactions.map((transaction) => (
+              <TransactionRow
+                key={transaction.id}
+                transaction={transaction}
+                allocationTotals={allocationTotals}
+                isDeleting={deletingId === transaction.id}
+                deletingRepaymentId={deletingRepaymentId}
+                onEdit={openEdit}
+                onDelete={setTransactionToDelete}
+                onAddRepayment={openRepayment}
+                onDeleteRepayment={(row, repayment) => {
+                  setRepaymentToDelete({ transaction: row, repaymentId: repayment.id });
+                }}
+              />
+            ))
+          )}
         </div>
       )}
 

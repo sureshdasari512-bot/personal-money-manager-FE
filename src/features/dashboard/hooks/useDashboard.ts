@@ -3,7 +3,7 @@ import type { DashboardSummary } from '../../../types';
 import { fetchDashboard } from '../api';
 
 /**
- * Fetches dashboard totals for the authenticated user.
+ * Fetches dashboard totals, people with balances, and due lists.
  *
  * @returns Summary, loading, and error state
  */

@@ -2,7 +2,7 @@ import { apiFetch } from '../../lib/api-client';
 import type { DashboardResponse } from './types';
 
 /**
- * Loads dashboard totals for the current user.
+ * Loads dashboard totals, people with balances, and due lists.
  *
  * @returns Dashboard summary payload
  */
