@@ -7,11 +7,13 @@ import { FormError } from '../../../components/FormError';
 import { Modal } from '../../../components/Modal';
 import { PageHeader } from '../../../components/PageHeader';
 import { Spinner } from '../../../components/Spinner';
+import { totalsByAllocationId } from '../../../lib/allocationSplit';
 import { formatCurrency } from '../../../lib/formatCurrency';
 import type { LedgerTransaction, Transaction } from '../../../types';
 import { toApiError, type FieldErrors } from '../../../types/errors';
 import { usePerson } from '../../people/hooks/usePerson';
 import {
+  createPersonRepayment,
   createRepayment,
   createTransaction,
   deleteRepayment,
@@ -19,7 +21,11 @@ import {
   updateTransaction,
 } from '../api';
 import { useTransactions } from '../hooks/useTransactions';
-import type { CreateRepaymentPayload, CreateTransactionPayload, TransactionFormValues } from '../types';
+import type {
+  CreateRepaymentPayload,
+  CreateTransactionPayload,
+  TransactionFormValues,
+} from '../types';
 import { RepaymentForm } from './RepaymentForm';
 import { TransactionForm } from './TransactionForm';
 import { TransactionRow } from './TransactionRow';
@@ -36,6 +42,7 @@ export function PersonLedgerPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [repayingTransaction, setRepayingTransaction] = useState<LedgerTransaction | null>(null);
+  const [isPersonPaymentOpen, setIsPersonPaymentOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<LedgerTransaction | null>(null);
   const [repaymentToDelete, setRepaymentToDelete] = useState<{
@@ -105,6 +112,24 @@ export function PersonLedgerPage() {
   }
 
   /**
+   * Opens the person-level FIFO payment dialog.
+   */
+  function openPersonPayment(): void {
+    setIsPersonPaymentOpen(true);
+    setFieldErrors({});
+    setGlobalError(null);
+  }
+
+  /**
+   * Closes the person-level payment dialog.
+   */
+  function closePersonPayment(): void {
+    setIsPersonPaymentOpen(false);
+    setFieldErrors({});
+    setGlobalError(null);
+  }
+
+  /**
    * Creates or updates a transaction, then refreshes the ledger.
    *
    * @param payload - Transaction fields in cents
@@ -145,6 +170,31 @@ export function PersonLedgerPage() {
     try {
       await createRepayment(repayingTransaction.id, payload);
       closeRepayment();
+      await reload();
+    } catch (err) {
+      const apiError = toApiError(err);
+      setFieldErrors(apiError.fields ?? {});
+      setGlobalError(apiError.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  /**
+   * Records a person-level FIFO payment, then refreshes the ledger.
+   *
+   * @param payload - Repayment fields in cents
+   */
+  async function handlePersonPayment(payload: CreateRepaymentPayload): Promise<void> {
+    if (!personId) {
+      return;
+    }
+    setIsSaving(true);
+    setFieldErrors({});
+    setGlobalError(null);
+    try {
+      await createPersonRepayment(personId, payload);
+      closePersonPayment();
       await reload();
     } catch (err) {
       const apiError = toApiError(err);
@@ -208,6 +258,10 @@ export function PersonLedgerPage() {
   }
 
   const initialValues = editingTransaction ? toFormValues(editingTransaction) : undefined;
+  const outstandingLendCents = transactions
+    .filter((transaction) => transaction.type === 'lend' && transaction.outstandingCents > 0)
+    .reduce((sum, transaction) => sum + transaction.outstandingCents, 0);
+  const allocationTotals = totalsByAllocationId(transactions);
 
   return (
     <main>
@@ -220,7 +274,16 @@ export function PersonLedgerPage() {
         eyebrow="Ledger"
         title={person?.name ?? 'Person'}
         description="Lend and borrow history for this contact."
-        action={<Button onClick={openCreate}>Add transaction</Button>}
+        action={
+          <div className="flex flex-wrap gap-2">
+            {outstandingLendCents > 0 ? (
+              <Button variant="secondary" onClick={openPersonPayment}>
+                Record payment
+              </Button>
+            ) : null}
+            <Button onClick={openCreate}>Add transaction</Button>
+          </div>
+        }
       />
       <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <p className="text-sm font-medium text-slate-500">Net balance</p>
@@ -241,11 +304,12 @@ export function PersonLedgerPage() {
           action={<Button onClick={openCreate}>Add transaction</Button>}
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4">
           {transactions.map((transaction) => (
             <TransactionRow
               key={transaction.id}
               transaction={transaction}
+              allocationTotals={allocationTotals}
               isDeleting={deletingId === transaction.id}
               deletingRepaymentId={deletingRepaymentId}
               onEdit={openEdit}
@@ -287,6 +351,20 @@ export function PersonLedgerPage() {
             onSubmit={handleRepayment}
           />
         ) : null}
+      </Modal>
+
+      <Modal title="Record payment" isOpen={isPersonPaymentOpen} onClose={closePersonPayment}>
+        <RepaymentForm
+          key={isPersonPaymentOpen ? 'person-payment' : 'person-payment-closed'}
+          outstandingCents={outstandingLendCents}
+          isSaving={isSaving}
+          fieldErrors={fieldErrors}
+          globalError={globalError}
+          remainingLabel="They still owe you"
+          hint="Applies to the oldest outstanding loans first. Use Add repayment on a row if this cash is for a specific loan."
+          submitLabel="Save payment"
+          onSubmit={handlePersonPayment}
+        />
       </Modal>
 
       <ConfirmDialog

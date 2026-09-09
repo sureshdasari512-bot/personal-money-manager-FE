@@ -3,6 +3,7 @@ import type {
   CreateRepaymentPayload,
   CreateTransactionPayload,
   PersonLedger,
+  PersonRepaymentResponse,
   RepaymentResponse,
   TransactionResponse,
 } from './types';
@@ -70,6 +71,23 @@ export function createRepayment(
   payload: CreateRepaymentPayload,
 ): Promise<RepaymentResponse> {
   return apiFetch<RepaymentResponse>(`/transactions/${transactionId}/repayments`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Records a person-level payment and splits it FIFO across outstanding lends.
+ *
+ * @param personId - Person who paid
+ * @param payload - Amount in cents, payment date, optional notes
+ * @returns Allocation header and the repayment slices
+ */
+export function createPersonRepayment(
+  personId: string,
+  payload: CreateRepaymentPayload,
+): Promise<PersonRepaymentResponse> {
+  return apiFetch<PersonRepaymentResponse>(`/people/${personId}/repayments`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });

@@ -59,7 +59,7 @@ export function TransactionForm({
       return;
     }
     if (dueDate && dueDate < transactionDate) {
-      setDateError('Due date cannot be before the transaction date');
+      setDateError('Due date cannot be before the date the money moved');
       return;
     }
     setAmountError(undefined);
@@ -103,7 +103,7 @@ export function TransactionForm({
         required
       />
       <Input
-        label="Transaction date"
+        label={type === 'lend' ? 'Date you lent the money' : 'Date you borrowed the money'}
         name="transactionDate"
         type="date"
         value={transactionDate}

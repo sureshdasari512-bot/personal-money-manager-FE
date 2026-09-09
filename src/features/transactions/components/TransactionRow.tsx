@@ -1,7 +1,9 @@
 import { Button } from '../../../components/Button';
 import { StatusBadge } from '../../../components/StatusBadge';
+import { formatAllocationSplit } from '../../../lib/allocationSplit';
+import { tokens } from '../../../lib/design-tokens';
 import { formatCurrency } from '../../../lib/formatCurrency';
-import { formatDate } from '../../../lib/formatDate';
+import { formatDate, formatLoanWhen, formatPaymentWhen } from '../../../lib/formatDate';
 import {
   formatTransactionStatus,
   transactionStatusTone,
@@ -11,6 +13,7 @@ import type { LedgerTransaction, Repayment } from '../types';
 
 interface TransactionRowProps {
   transaction: LedgerTransaction;
+  allocationTotals: Record<string, number>;
   isDeleting: boolean;
   deletingRepaymentId: string | null;
   onEdit: (transaction: LedgerTransaction) => void;
@@ -24,6 +27,7 @@ interface TransactionRowProps {
  * Purely presentational — receives all data via props, no data fetching here.
  *
  * @param transaction - Ledger row to render
+ * @param allocationTotals - Person-level payment totals keyed by allocation id
  * @param isDeleting - Whether this row's delete request is in flight
  * @param deletingRepaymentId - Repayment currently being removed
  * @param onEdit - Opens the edit dialog in the parent
@@ -33,6 +37,7 @@ interface TransactionRowProps {
  */
 export function TransactionRow({
   transaction,
+  allocationTotals,
   isDeleting,
   deletingRepaymentId,
   onEdit,
@@ -45,7 +50,14 @@ export function TransactionRow({
   const overdue = !settled && isOverdue(transaction.dueDate);
 
   return (
-    <div className="border-b border-slate-100 px-4 py-3 last:border-b-0">
+    <article
+      className="p-4 sm:p-5"
+      style={{
+        background: tokens.color.surface,
+        borderRadius: tokens.radius.lg,
+        boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
+      }}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -61,7 +73,7 @@ export function TransactionRow({
             />
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            {formatDate(transaction.transactionDate)}
+            {formatLoanWhen(transaction.type, transaction.transactionDate)}
             {transaction.dueDate ? ` · Due ${formatDate(transaction.dueDate)}` : ''}
           </p>
           {transaction.notes ? (
@@ -100,32 +112,64 @@ export function TransactionRow({
       </div>
 
       {hasRepayments ? (
-        <ul className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3">
-          {transaction.repayments.map((repayment) => (
-            <li key={repayment.id} className="flex items-center justify-between gap-3 text-sm">
-              <div className="min-w-0">
-                <p className="font-medium text-slate-800">
-                  {formatCurrency(repayment.amountCents)}
-                </p>
-                <p className="text-slate-500">
-                  Paid {formatDate(repayment.paidOn)}
-                  {repayment.notes ? ` · ${repayment.notes}` : ''}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                isLoading={deletingRepaymentId === repayment.id}
-                onClick={() => {
-                  onDeleteRepayment(transaction, repayment);
+        <ul
+          className="mt-4 space-y-3 rounded-xl p-3"
+          style={{ background: tokens.color.canvas }}
+        >
+          {transaction.repayments.map((repayment) => {
+            const whenLabel = formatPaymentWhen(repayment.paidOn, repayment.createdAt);
+            const paymentTotalCents = repayment.allocationId
+              ? allocationTotals[repayment.allocationId]
+              : undefined;
+            const splitLabel =
+              paymentTotalCents === undefined
+                ? null
+                : formatAllocationSplit(repayment.amountCents, paymentTotalCents);
+            return (
+              <li
+                key={repayment.id}
+                className="flex items-start justify-between gap-3 px-3 py-3"
+                style={{
+                  background: tokens.color.surface,
+                  borderRadius: tokens.radius.md,
+                  boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
                 }}
               >
-                Remove
-              </Button>
-            </li>
-          ))}
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: tokens.color.ink }}>
+                    {formatCurrency(repayment.amountCents)}
+                  </p>
+                  {splitLabel ? (
+                    <p className="mt-1 text-sm leading-5" style={{ color: tokens.color.primary }}>
+                      {splitLabel}
+                    </p>
+                  ) : null}
+                  <p className="mt-1 text-xs leading-5" style={{ color: tokens.color.muted }}>
+                    <time dateTime={repayment.createdAt}>{whenLabel}</time>
+                  </p>
+                  {repayment.notes ? (
+                    <p className="mt-1 text-sm leading-5" style={{ color: tokens.color.ink }}>
+                      {repayment.notes}
+                    </p>
+                  ) : null}
+                </div>
+                <Button
+                  variant="ghost"
+                  className="shrink-0"
+                  aria-label={`Remove repayment of ${formatCurrency(repayment.amountCents)}`}
+                  isLoading={deletingRepaymentId === repayment.id}
+                  onClick={() => {
+                    onDeleteRepayment(transaction, repayment);
+                  }}
+                >
+                  Remove
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
-    </div>
+    </article>
   );
 }
 

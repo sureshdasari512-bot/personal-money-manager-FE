@@ -57,6 +57,23 @@ export interface Repayment {
   amountCents: number;
   paidOn: string;
   notes: string | null;
+  allocationId: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+export interface RepaymentAllocation {
+  id: string;
+  userId: string;
+  personId: string;
+  totalAmountCents: number;
+  paidOn: string;
+  notes: string | null;
+  unallocatedCents: number;
   deletedAt: string | null;
   deletedBy: string | null;
   createdAt: string;

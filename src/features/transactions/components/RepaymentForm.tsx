@@ -12,16 +12,22 @@ interface RepaymentFormProps {
   isSaving: boolean;
   fieldErrors?: FieldErrors;
   globalError?: string | null;
+  remainingLabel?: string;
+  hint?: string;
+  submitLabel?: string;
   onSubmit: (payload: CreateRepaymentPayload) => Promise<void>;
 }
 
 /**
  * Presentational repayment form. Converts major units to integer cents before submit.
  *
- * @param outstandingCents - Remaining balance on the parent transaction
+ * @param outstandingCents - Remaining balance this payment may not exceed
  * @param isSaving - In-flight flag
  * @param fieldErrors - Per-field messages from the API
  * @param globalError - Form-level message from the API
+ * @param remainingLabel - Caption above the remaining-balance amount
+ * @param hint - Extra guidance under the remaining balance
+ * @param submitLabel - Submit button text
  * @param onSubmit - Persist handler
  */
 export function RepaymentForm({
@@ -29,6 +35,9 @@ export function RepaymentForm({
   isSaving,
   fieldErrors = {},
   globalError,
+  remainingLabel = 'Remaining balance',
+  hint,
+  submitLabel = 'Save repayment',
   onSubmit,
 }: RepaymentFormProps) {
   const [amount, setAmount] = useState('');
@@ -64,8 +73,9 @@ export function RepaymentForm({
     <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
       <FormError message={globalError} />
       <p className="text-sm text-slate-500">
-        Remaining balance: {formatCurrency(outstandingCents)}
+        {remainingLabel}: {formatCurrency(outstandingCents)}
       </p>
+      {hint ? <p className="text-sm text-slate-500">{hint}</p> : null}
       <Input
         label="Amount"
         name="amountCents"
@@ -95,7 +105,7 @@ export function RepaymentForm({
         error={fieldErrors.notes}
       />
       <Button type="submit" isLoading={isSaving}>
-        Save repayment
+        {submitLabel}
       </Button>
     </form>
   );

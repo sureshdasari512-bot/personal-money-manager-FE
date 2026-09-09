@@ -2,6 +2,7 @@ import type {
   LedgerTransaction,
   PersonLedger,
   Repayment,
+  RepaymentAllocation,
   Transaction,
   TransactionStatus,
   TransactionType,
@@ -11,6 +12,7 @@ export type {
   LedgerTransaction,
   PersonLedger,
   Repayment,
+  RepaymentAllocation,
   Transaction,
   TransactionStatus,
   TransactionType,
@@ -22,6 +24,11 @@ export interface TransactionResponse {
 
 export interface RepaymentResponse {
   repayment: Repayment;
+}
+
+export interface PersonRepaymentResponse {
+  allocation: RepaymentAllocation;
+  repayments: Repayment[];
 }
 
 export interface TransactionFormValues {
