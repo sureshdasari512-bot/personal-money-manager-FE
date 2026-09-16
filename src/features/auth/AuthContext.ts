@@ -5,6 +5,7 @@ export interface AuthContextValue {
   user: PublicUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<PublicUser>;
+  completeInvite: (token: string, password: string) => Promise<PublicUser>;
   logout: () => Promise<void>;
 }
 

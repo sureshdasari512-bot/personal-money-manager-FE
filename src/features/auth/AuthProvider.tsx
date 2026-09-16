@@ -40,14 +40,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return response.user;
   }, []);
 
+  /**
+   * Activates an invited account and stores the new session user.
+   *
+   * @param token - Invite token from the email link
+   * @param password - Password chosen by the invitee
+   * @returns Newly created public user
+   */
+  const completeInvite = useCallback(async (token: string, password: string) => {
+    const response = await authApi.acceptInvite({ token, password });
+    setUser(response.user);
+    return response.user;
+  }, []);
+
   const logout = useCallback(async () => {
     await authApi.logout();
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, isLoading, login, logout }),
-    [user, isLoading, login, logout],
+    () => ({ user, isLoading, login, completeInvite, logout }),
+    [user, isLoading, login, completeInvite, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
