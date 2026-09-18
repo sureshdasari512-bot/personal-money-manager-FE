@@ -12,6 +12,7 @@ interface UseForgotPasswordResult {
   globalError: string | null;
   successMessage: string | null;
   isSubmitting: boolean;
+  isLocked: boolean;
   setEmail: (email: string) => void;
   submit: () => Promise<void>;
 }
@@ -43,6 +44,7 @@ export function useForgotPassword(): UseForgotPasswordResult {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   /**
    * Updates the email and clears that field's error.
@@ -51,6 +53,7 @@ export function useForgotPassword(): UseForgotPasswordResult {
    */
   function setEmail(email: string): void {
     setValues({ email });
+    setIsLocked(false);
     setFieldErrors((current) => {
       const next = { ...current };
       delete next.email;
@@ -77,11 +80,13 @@ export function useForgotPassword(): UseForgotPasswordResult {
 
     try {
       const result = await authApi.requestPasswordReset({ email: values.email.trim() });
+      setIsLocked(false);
       setSuccessMessage(result.message);
     } catch (error) {
       const apiError = toApiError(error);
       setFieldErrors(apiError.fields ?? {});
       setGlobalError(apiError.message);
+      setIsLocked(apiError.status === 429);
     } finally {
       setIsSubmitting(false);
     }
@@ -93,6 +98,7 @@ export function useForgotPassword(): UseForgotPasswordResult {
     globalError,
     successMessage,
     isSubmitting,
+    isLocked,
     setEmail,
     submit,
   };

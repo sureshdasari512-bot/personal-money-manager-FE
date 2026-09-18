@@ -12,7 +12,7 @@ import { useResetPassword } from '../hooks/useResetPassword';
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const token = params.get('token') ?? '';
+  const token = (params.get('token') ?? '').trim();
   const {
     values,
     fieldErrors,

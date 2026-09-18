@@ -14,7 +14,7 @@ import { useForgotPassword } from '../hooks/useForgotPassword';
 export function ForgotPasswordPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { values, fieldErrors, globalError, successMessage, isSubmitting, setEmail, submit } =
+  const { values, fieldErrors, globalError, successMessage, isSubmitting, isLocked, setEmail, submit } =
     useForgotPassword();
 
   if (user) {
@@ -63,7 +63,7 @@ export function ForgotPasswordPage() {
           error={fieldErrors.email}
           required
         />
-        <Button type="submit" isLoading={isSubmitting} className="mt-1 w-full">
+        <Button type="submit" isLoading={isSubmitting} disabled={isLocked} className="mt-1 w-full">
           Send reset link
         </Button>
         <p className="text-center text-sm text-slate-500">
