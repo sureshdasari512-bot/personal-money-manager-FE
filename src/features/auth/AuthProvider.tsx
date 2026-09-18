@@ -53,14 +53,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return response.user;
   }, []);
 
+  /**
+   * Completes a password reset and stores the new session user.
+   *
+   * @param token - Reset token from the email link
+   * @param password - New password
+   * @returns Public user after reset
+   */
+  const completePasswordReset = useCallback(async (token: string, password: string) => {
+    const response = await authApi.resetPassword({ token, password });
+    setUser(response.user);
+    return response.user;
+  }, []);
+
   const logout = useCallback(async () => {
     await authApi.logout();
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, isLoading, login, completeInvite, logout }),
-    [user, isLoading, login, completeInvite, logout],
+    () => ({ user, isLoading, login, completeInvite, completePasswordReset, logout }),
+    [user, isLoading, login, completeInvite, completePasswordReset, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

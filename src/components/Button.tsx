@@ -30,7 +30,7 @@ export function Button({
   return (
     <button
       style={{ borderRadius: tokens.radius.sm }}
-      className={`inline-flex min-h-11 items-center justify-center px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
+      className={`inline-flex min-h-11 cursor-pointer items-center justify-center px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >

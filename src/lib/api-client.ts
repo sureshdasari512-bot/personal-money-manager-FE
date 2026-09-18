@@ -7,6 +7,8 @@ const AUTH_PATHS_WITHOUT_REFRESH = new Set([
   '/auth/refresh',
   '/auth/logout',
   '/auth/accept-invite',
+  '/auth/forgot-password',
+  '/auth/reset-password',
 ]);
 
 /**

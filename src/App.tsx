@@ -5,7 +5,9 @@ import { RoleGuard } from './components/RoleGuard';
 import { InvitationsPage } from './features/admin/components/InvitationsPage';
 import { UserManagementPage } from './features/admin/components/UserManagementPage';
 import { AcceptInvitePage } from './features/auth/components/AcceptInvitePage';
+import { ForgotPasswordPage } from './features/auth/components/ForgotPasswordPage';
 import { LoginPage } from './features/auth/components/LoginPage';
+import { ResetPasswordPage } from './features/auth/components/ResetPasswordPage';
 import { UnauthorizedPage } from './features/auth/components/UnauthorizedPage';
 import { DashboardPage } from './features/dashboard/components/DashboardPage';
 import { PeoplePage } from './features/people/components/PeoplePage';
@@ -19,6 +21,8 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/invite" element={<AcceptInvitePage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
         <Route

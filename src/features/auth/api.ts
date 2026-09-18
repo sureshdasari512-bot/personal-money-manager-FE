@@ -1,5 +1,13 @@
 import { apiFetch } from '../../lib/api-client';
-import type { AcceptInvitePayload, AuthResponse, LoginPayload, MeResponse } from './types';
+import type {
+  AcceptInvitePayload,
+  AuthResponse,
+  ForgotPasswordPayload,
+  ForgotPasswordResponse,
+  LoginPayload,
+  MeResponse,
+  ResetPasswordPayload,
+} from './types';
 
 /**
  * Logs in with email and password. Auth cookies are set by the API.
@@ -36,7 +44,7 @@ export function logout(): Promise<void> {
  * @returns Current user or fails with 401
  */
 export function fetchCurrentUser(): Promise<MeResponse> {
-  return apiFetch<MeResponse>('/auth/me');
+  return apiFetch<MeResponse>('/auth/me', { signal: AbortSignal.timeout(20_000) });
 }
 
 /**
@@ -47,6 +55,32 @@ export function fetchCurrentUser(): Promise<MeResponse> {
  */
 export function acceptInvite(payload: AcceptInvitePayload): Promise<AuthResponse> {
   return apiFetch<AuthResponse>('/auth/accept-invite', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Requests a password-reset email. Always returns the same generic message.
+ *
+ * @param payload - Account email
+ * @returns Client-safe confirmation copy
+ */
+export function requestPasswordReset(payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> {
+  return apiFetch<ForgotPasswordResponse>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Sets a new password from the email link and starts a session.
+ *
+ * @param payload - Reset token plus new password
+ * @returns Authenticated public user
+ */
+export function resetPassword(payload: ResetPasswordPayload): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>('/auth/reset-password', {
     method: 'POST',
     body: JSON.stringify(payload),
   });

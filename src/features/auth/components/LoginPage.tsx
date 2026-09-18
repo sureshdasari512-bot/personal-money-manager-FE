@@ -1,5 +1,5 @@
 import { FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { AuthLayout } from '../../../components/AuthLayout';
 import { Button } from '../../../components/Button';
 import { FormError } from '../../../components/FormError';
@@ -13,7 +13,7 @@ import { useLogin } from '../hooks/useLogin';
  */
 export function LoginPage() {
   const { user } = useAuth();
-  const { values, fieldErrors, globalError, isSubmitting, setEmail, setPassword, submit } =
+  const { values, fieldErrors, globalError, isSubmitting, isLocked, setEmail, setPassword, submit } =
     useLogin();
 
   if (user) {
@@ -55,9 +55,18 @@ export function LoginPage() {
           onChange={(event) => setPassword(event.target.value)}
           error={fieldErrors.password}
         />
-        <Button type="submit" isLoading={isSubmitting} className="mt-1 w-full">
+        <p className="-mt-2 text-right">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-semibold text-blue-700 hover:text-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+          >
+            Forgot password?
+          </Link>
+        </p>
+        <Button type="submit" isLoading={isSubmitting} disabled={isLocked} className="mt-1 w-full">
           Sign in
         </Button>
+        <p className="text-center text-xs text-slate-500">3 sign-in attempts per 15 minutes.</p>
       </form>
     </AuthLayout>
   );

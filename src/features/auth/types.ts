@@ -10,10 +10,23 @@ export interface AcceptInvitePayload {
   password: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+}
+
 export interface AuthResponse {
   user: PublicUser;
 }
 
 export interface MeResponse {
   user: PublicUser;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
 }

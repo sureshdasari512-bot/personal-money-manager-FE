@@ -13,6 +13,7 @@ interface UseLoginResult {
   fieldErrors: FieldErrors;
   globalError: string | null;
   isSubmitting: boolean;
+  isLocked: boolean;
   setEmail: (email: string) => void;
   setPassword: (password: string) => void;
   submit: () => Promise<void>;
@@ -51,6 +52,7 @@ export function useLogin(): UseLoginResult {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   /**
    * Updates the email and clears that field's error.
@@ -59,6 +61,7 @@ export function useLogin(): UseLoginResult {
    */
   function setEmail(email: string): void {
     setValues((current) => ({ ...current, email }));
+    setIsLocked(false);
     setFieldErrors((current) => {
       const next = { ...current };
       delete next.email;
@@ -97,11 +100,13 @@ export function useLogin(): UseLoginResult {
 
     try {
       const user = await login(values.email.trim(), values.password);
+      setIsLocked(false);
       navigate(user.role === 'admin' ? '/admin/users' : '/dashboard', { replace: true });
     } catch (error) {
       const apiError = toApiError(error);
       setFieldErrors(apiError.fields ?? {});
       setGlobalError(apiError.message);
+      setIsLocked(apiError.status === 429);
     } finally {
       setIsSubmitting(false);
     }
@@ -112,6 +117,7 @@ export function useLogin(): UseLoginResult {
     fieldErrors,
     globalError,
     isSubmitting,
+    isLocked,
     setEmail,
     setPassword,
     submit,
