@@ -66,7 +66,6 @@ export function LoginPage() {
         <Button type="submit" isLoading={isSubmitting} disabled={isLocked} className="mt-1 w-full">
           Sign in
         </Button>
-        <p className="text-center text-xs text-slate-500">3 sign-in attempts per 15 minutes.</p>
       </form>
     </AuthLayout>
   );

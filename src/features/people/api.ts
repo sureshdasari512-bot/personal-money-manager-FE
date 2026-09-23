@@ -1,13 +1,22 @@
 import { apiFetch } from '../../lib/api-client';
-import type { PeopleResponse, PersonFormValues, PersonResponse } from './types';
+import type { PeoplePage, PersonFormValues, PersonResponse } from './types';
 
 /**
- * Fetches contacts owned by the current user.
+ * Fetches one page of contacts owned by the current user.
+ * When `q` is supplied, results are filtered by name/phone/email and cursor
+ * pagination is disabled — the full match set is returned.
  *
- * @returns People list payload
+ * @param cursor - Opaque cursor from the previous page response (absent = first page)
+ * @param limit - Records per page (1–100, default 20)
+ * @param q - Optional free-text search term
+ * @returns One page of people plus pagination metadata
  */
-export function fetchPeople(): Promise<PeopleResponse> {
-  return apiFetch<PeopleResponse>('/people');
+export function fetchPeople(cursor?: string, limit = 20, q?: string): Promise<PeoplePage> {
+  const params = new URLSearchParams();
+  if (cursor) params.set('cursor', cursor);
+  params.set('limit', String(limit));
+  if (q && q.trim()) params.set('q', q.trim());
+  return apiFetch<PeoplePage>(`/people?${params.toString()}`);
 }
 
 /**
@@ -48,7 +57,7 @@ export function updatePerson(personId: string, values: PersonFormValues): Promis
 }
 
 /**
- * Deletes a contact owned by the current user.
+ * Soft-deletes a contact owned by the current user.
  *
  * @param personId - Person id
  */
