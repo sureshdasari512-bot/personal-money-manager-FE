@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toApiError, type FieldErrors } from '../../../types/errors';
 import { deleteInterestConfig, upsertInterestConfig } from '../api';
-import type { InterestConfigPayload, InterestPeriod, LedgerTransaction } from '../types';
+import type { InterestConfigPayload, LedgerTransaction } from '../types';
 
 interface UseInterestConfigReturn {
   isSaving: boolean;

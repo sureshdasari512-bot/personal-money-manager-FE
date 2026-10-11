@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '../../../components/Button';
-import { FormError } from '../../../components/FormError';
 import { Modal } from '../../../components/Modal';
 import { tokens } from '../../../lib/design-tokens';
 import { bpsToPercent, PERIOD_LABELS } from '../../../lib/simpleInterest';

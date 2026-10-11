@@ -1,5 +1,4 @@
 import { apiFetch } from '../../lib/api-client';
-import type { TransactionInterestConfig } from '../../types';
 import type {
   CreateRepaymentPayload,
   CreateTransactionPayload,
