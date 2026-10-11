@@ -27,9 +27,11 @@ export function Modal({ title, isOpen, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-lg"
+        className="flex w-full max-w-md flex-col rounded-2xl bg-white shadow-lg"
+        style={{ maxHeight: 'calc(100dvh - 2rem)' }}
       >
-        <div className="mb-4 flex items-center justify-between">
+        {/* Sticky header */}
+        <div className="flex shrink-0 items-center justify-between px-5 pt-5 pb-4">
           <h2 id="modal-title" className="text-lg font-semibold">
             {title}
           </h2>
@@ -37,7 +39,10 @@ export function Modal({ title, isOpen, onClose, children }: ModalProps) {
             Close
           </Button>
         </div>
-        {children}
+        {/* Scrollable body */}
+        <div className="overflow-y-auto px-5 pb-5">
+          {children}
+        </div>
       </div>
     </div>
   );

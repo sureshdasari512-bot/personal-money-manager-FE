@@ -1,9 +1,13 @@
 import { apiFetch } from '../../lib/api-client';
+import type { TransactionInterestConfig } from '../../types';
 import type {
   CreateRepaymentPayload,
   CreateTransactionPayload,
+  InterestConfigPayload,
+  InterestConfigResponse,
   PersonLedger,
   PersonRepaymentResponse,
+  RepaymentPreviewResponse,
   RepaymentResponse,
   TransactionResponse,
 } from './types';
@@ -60,6 +64,23 @@ export function deleteTransaction(transactionId: string, cascade = false): Promi
 }
 
 /**
+ * Returns how a proposed payment amount would be split — interest first,
+ * then principal. Read-only, no writes made.
+ *
+ * @param transactionId - Parent transaction
+ * @param amountCents - Proposed payment in cents
+ * @returns Breakdown of interest vs principal allocation
+ */
+export function previewRepayment(
+  transactionId: string,
+  amountCents: number,
+): Promise<RepaymentPreviewResponse> {
+  return apiFetch<RepaymentPreviewResponse>(
+    `/transactions/${transactionId}/repayments/preview?amountCents=${amountCents}`,
+  );
+}
+
+/**
  * Records a repayment against a transaction.
  *
  * @param transactionId - Parent transaction
@@ -103,4 +124,31 @@ export function deleteRepayment(transactionId: string, repaymentId: string): Pro
   return apiFetch<void>(`/transactions/${transactionId}/repayments/${repaymentId}`, {
     method: 'DELETE',
   });
+}
+
+/**
+ * Creates or updates the simple-interest config for a transaction.
+ *
+ * @param transactionId    - Parent transaction
+ * @param payload          - Annual rate in basis points and compounding period
+ * @returns The upserted interest config
+ */
+export function upsertInterestConfig(
+  transactionId: string,
+  payload: InterestConfigPayload,
+): Promise<InterestConfigResponse> {
+  return apiFetch<InterestConfigResponse>(
+    `/transactions/${transactionId}/interest-config`,
+    { method: 'PUT', body: JSON.stringify(payload) },
+  );
+}
+
+/**
+ * Soft-deletes the interest config for a transaction.
+ * Accrual history is preserved for auditability.
+ *
+ * @param transactionId - Parent transaction
+ */
+export function deleteInterestConfig(transactionId: string): Promise<void> {
+  return apiFetch<void>(`/transactions/${transactionId}/interest-config`, { method: 'DELETE' });
 }

@@ -27,15 +27,15 @@ export function BalanceBreakdown({
     <section className="flex flex-col gap-3" aria-label="Balance breakdown">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <AmountCard
-          eyebrow="They owe you"
+          eyebrow="Lent"
           amountCents={theyOweYouCents}
-          hint="Money you lent that is still outstanding"
+          hint="Outstanding from money you lent"
           tone="lend"
         />
         <AmountCard
-          eyebrow="You owe them"
+          eyebrow="Borrowed"
           amountCents={youOweThemCents}
-          hint="Money you borrowed that is still outstanding"
+          hint="Outstanding from money you borrowed"
           tone="borrow"
         />
       </div>

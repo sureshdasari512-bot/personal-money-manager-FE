@@ -1,46 +1,57 @@
 /**
- * Labels the loan date so it is not mistaken for a payment date.
+ * Single source of truth for all date/time display in the app.
  *
- * @param type - Lend or borrow
- * @param transactionDate - Calendar day the money moved
- * @param locales - Locale for the date; defaults to the browser locale
- * @returns Client-facing line such as `Lent on 1 Aug 2026`
+ * All functions use `en-GB` locale so the format is always:
+ *   - Date:    "5 Sept 2026"
+ *   - Time:    "10:34 am"
+ *   - Payment: "Paid 5 Sept 2026 at 10:34 am"
+ *
+ * Never call `toLocaleDateString`, `toLocaleString`, or
+ * `Intl.DateTimeFormat` directly in a component — use these instead.
  */
-export function formatLoanWhen(
-  type: 'lend' | 'borrow',
-  transactionDate: string,
-  locales?: Intl.LocalesArgument,
-): string {
-  const day = formatDate(transactionDate, locales);
-  return type === 'lend' ? `Lent on ${day}` : `Borrowed on ${day}`;
-}
+
+const LOCALE = 'en-GB' as const;
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 /**
- * Formats an ISO date string for display.
- * Date-only values (`YYYY-MM-DD`) are parsed as local calendar days
- * so a due date does not shift when the browser is behind UTC.
+ * Formats an ISO date string as "5 Sept 2026".
+ * Date-only values (YYYY-MM-DD) are parsed as local calendar days so a
+ * due date never shifts when the browser timezone is behind UTC.
  *
- * @param value - ISO date or datetime
- * @param locales - Locale for month names; defaults to the browser locale
- * @returns Localized date string
+ * @param value - ISO date (YYYY-MM-DD) or datetime string
+ * @returns Formatted date, e.g. "5 Sept 2026"
  */
-export function formatDate(value: string, locales?: Intl.LocalesArgument): string {
-  return new Intl.DateTimeFormat(locales, {
-    year: 'numeric',
-    month: 'short',
+export function formatDate(value: string): string {
+  return new Intl.DateTimeFormat(LOCALE, {
     day: 'numeric',
+    month: 'short',
+    year: 'numeric',
   }).format(parseDateValue(value));
 }
 
 /**
- * Formats a clock time in 12-hour form so clients can read it without guessing.
+ * Labels the loan date so it is not mistaken for a payment date.
  *
- * @param value - Instant to format
- * @param locales - Locale for AM/PM style; defaults to the browser locale
- * @returns Localized time such as `10:34 am`
+ * @param type - 'lend' or 'borrow'
+ * @param transactionDate - Calendar day the money moved (YYYY-MM-DD)
+ * @returns e.g. "Lent on 5 Sept 2026" or "Borrowed on 5 Sept 2026"
  */
-export function formatTime(value: Date, locales?: Intl.LocalesArgument): string {
-  return new Intl.DateTimeFormat(locales, {
+export function formatLoanWhen(type: 'lend' | 'borrow', transactionDate: string): string {
+  const day = formatDate(transactionDate);
+  return type === 'lend' ? `Lent on ${day}` : `Borrowed on ${day}`;
+}
+
+/**
+ * Formats a clock time in 12-hour form.
+ *
+ * @param value - Date instance
+ * @returns e.g. "10:34 am"
+ */
+export function formatTime(value: Date): string {
+  return new Intl.DateTimeFormat(LOCALE, {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
@@ -48,27 +59,26 @@ export function formatTime(value: Date, locales?: Intl.LocalesArgument): string 
 }
 
 /**
- * Builds a payment caption: calendar day the client chose, plus the time it was recorded.
- * Does not attach the recorded clock time to a different payment date (backdated entries).
+ * Builds a human-readable payment caption combining the calendar date the
+ * user chose and the time the record was saved.
  *
- * @param paidOn - Payment calendar date (`YYYY-MM-DD`)
- * @param recordedAt - Server timestamp when the repayment was saved
- * @param locales - Locale for date and time; defaults to the browser locale
- * @returns Client-facing line such as `Paid today at 10:34 am`
+ * Same-day:  "Paid today at 10:34 am"
+ * Past day:  "Paid 5 Sept 2026 at 10:34 am"
+ * Backdated: "Paid 15 Jan 2020 · recorded 15 Jul 2020 at 10:34 am"
+ *
+ * @param paidOn     - Payment calendar date (YYYY-MM-DD)
+ * @param recordedAt - Server ISO timestamp when the repayment was saved
+ * @returns Client-facing payment caption
  */
-export function formatPaymentWhen(
-  paidOn: string,
-  recordedAt: string,
-  locales?: Intl.LocalesArgument,
-): string {
-  const paidLabel = formatFriendlyDay(paidOn, locales);
+export function formatPaymentWhen(paidOn: string, recordedAt: string): string {
+  const paidLabel = formatFriendlyDay(paidOn);
   const recorded = new Date(recordedAt);
 
   if (Number.isNaN(recorded.getTime())) {
     return `Paid ${paidLabel}`;
   }
 
-  const timeLabel = formatTime(recorded, locales);
+  const timeLabel = formatTime(recorded);
   const paidDay = toLocalIsoDate(parseDateValue(paidOn));
   const recordedDay = toLocalIsoDate(recorded);
 
@@ -76,14 +86,16 @@ export function formatPaymentWhen(
     return `Paid ${paidLabel} at ${timeLabel}`;
   }
 
-  return `Paid ${paidLabel} · recorded ${formatFriendlyDay(recordedAt, locales)} at ${timeLabel}`;
+  return `Paid ${paidLabel} · recorded ${formatFriendlyDay(recordedAt)} at ${timeLabel}`;
 }
 
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
 /**
- * Parses a date-only string as a local calendar day, or a datetime as an instant.
- *
- * @param value - ISO date or datetime
- * @returns Local Date
+ * Parses a date-only string as a local calendar day to avoid UTC-shift,
+ * or a datetime string as an instant.
  */
 function parseDateValue(value: string): Date {
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -94,15 +106,12 @@ function parseDateValue(value: string): Date {
 }
 
 /**
- * Formats a day as Today, Yesterday, or a short date.
- *
- * @param value - ISO date or datetime
- * @param locales - Locale for the fallback date
- * @returns Friendly day label
+ * Returns "today", "yesterday", or the formatted date string.
  */
-function formatFriendlyDay(value: string, locales?: Intl.LocalesArgument): string {
+function formatFriendlyDay(value: string): string {
   const date = parseDateValue(value);
   const day = toLocalIsoDate(date);
+
   if (day === toLocalIsoDate(new Date())) {
     return 'today';
   }
@@ -113,14 +122,11 @@ function formatFriendlyDay(value: string, locales?: Intl.LocalesArgument): strin
     return 'yesterday';
   }
 
-  return formatDate(value, locales);
+  return formatDate(value);
 }
 
 /**
- * Local calendar date as `YYYY-MM-DD`.
- *
- * @param date - Instant in the user's timezone
- * @returns Date-only string
+ * Local calendar date as YYYY-MM-DD from a Date instance.
  */
 function toLocalIsoDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');

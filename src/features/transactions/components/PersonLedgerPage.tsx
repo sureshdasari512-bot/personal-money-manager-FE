@@ -21,7 +21,10 @@ import {
   deleteRepayment,
   deleteTransaction,
   updateTransaction,
+  upsertInterestConfig,
 } from '../api';
+import { useInterestConfig } from '../../interest/hooks/useInterestConfig';
+import { InterestTab } from '../../interest/components/InterestTab';
 import { useTransactions } from '../hooks/useTransactions';
 import type {
   CreateRepaymentPayload,
@@ -32,7 +35,7 @@ import { RepaymentForm } from './RepaymentForm';
 import { TransactionForm } from './TransactionForm';
 import { TransactionRow } from './TransactionRow';
 
-type LedgerTab = 'all' | 'lend' | 'borrow';
+type LedgerTab = 'all' | 'lend' | 'borrow' | 'interest';
 
 /**
  * Person-level ledger: history, net balance, transactions, and repayments.
@@ -59,6 +62,13 @@ export function PersonLedgerPage() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [ledgerTab, setLedgerTab] = useState<LedgerTab>('all');
+  const {
+    isSaving: isInterestSaving,
+    fieldErrors: interestFieldErrors,
+    globalError: interestGlobalError,
+    handleUpsert: handleInterestUpsert,
+    handleDelete: handleInterestDelete,
+  } = useInterestConfig();
 
   if (!personId) {
     return <p className="text-sm text-red-600">Missing person.</p>;
@@ -146,8 +156,16 @@ export function PersonLedgerPage() {
     try {
       if (editingTransaction) {
         await updateTransaction(editingTransaction.id, payload);
+        // If the user toggled/changed interest on the edit form, upsert it.
+        if (payload.interest) {
+          await upsertInterestConfig(editingTransaction.id, payload.interest);
+        }
       } else {
-        await createTransaction(payload);
+        const { transaction } = await createTransaction(payload);
+        // If the user filled in interest on the form, configure it immediately.
+        if (payload.interest) {
+          await upsertInterestConfig(transaction.id, payload.interest);
+        }
       }
       closeModal();
       await reload();
@@ -263,6 +281,10 @@ export function PersonLedgerPage() {
   }
 
   const initialValues = editingTransaction ? toFormValues(editingTransaction) : undefined;
+  // Pass existing interest config so the edit form pre-fills the interest section.
+  const initialInterest = editingTransaction
+    ? transactions.find((t) => t.id === editingTransaction.id)?.interestConfig ?? null
+    : null;
   const { theyOweYouCents, youOweThemCents } = outstandingByType(transactions);
   const outstandingLendCents = theyOweYouCents;
   const allocationTotals = totalsByAllocationId(transactions);
@@ -319,37 +341,55 @@ export function PersonLedgerPage() {
             value={ledgerTab}
             options={[
               { id: 'all', label: 'All', count: transactions.length },
-              { id: 'lend', label: 'They owe you', count: lendCount },
-              { id: 'borrow', label: 'You owe them', count: borrowCount },
+              { id: 'lend', label: 'Lent', count: lendCount },
+              { id: 'borrow', label: 'Borrowed', count: borrowCount },
+              { id: 'interest', label: 'Interest' },
             ]}
             onChange={setLedgerTab}
           />
-          {visibleTransactions.length === 0 ? (
-            <EmptyState
-              title={ledgerTab === 'lend' ? 'No money lent' : 'No money borrowed'}
-              description={
-                ledgerTab === 'lend'
-                  ? 'Amounts you lent this person will show here.'
-                  : 'Amounts you borrowed from this person will show here.'
-              }
-              action={<Button onClick={openCreate}>Add transaction</Button>}
+
+          {/* ── Interest tab ──────────────────────────────── */}
+          {ledgerTab === 'interest' ? (
+            <InterestTab
+              transactions={transactions}
+              isSaving={isInterestSaving}
+              fieldErrors={interestFieldErrors}
+              globalError={interestGlobalError}
+              onUpsert={handleInterestUpsert}
+              onRemove={handleInterestDelete}
+              onReload={reload}
             />
           ) : (
-            visibleTransactions.map((transaction) => (
-              <TransactionRow
-                key={transaction.id}
-                transaction={transaction}
-                allocationTotals={allocationTotals}
-                isDeleting={deletingId === transaction.id}
-                deletingRepaymentId={deletingRepaymentId}
-                onEdit={openEdit}
-                onDelete={setTransactionToDelete}
-                onAddRepayment={openRepayment}
-                onDeleteRepayment={(row, repayment) => {
-                  setRepaymentToDelete({ transaction: row, repaymentId: repayment.id });
-                }}
-              />
-            ))
+            /* ── Transactions tabs (all / lend / borrow) ── */
+            <>
+              {visibleTransactions.length === 0 ? (
+                <EmptyState
+                  title={ledgerTab === 'lend' ? 'Nothing lent yet' : 'Nothing borrowed yet'}
+                  description={
+                    ledgerTab === 'lend'
+                      ? 'Amounts you lent this person will appear here.'
+                      : 'Amounts you borrowed from this person will appear here.'
+                  }
+                  action={<Button onClick={openCreate}>Add transaction</Button>}
+                />
+              ) : (
+                visibleTransactions.map((transaction) => (
+                  <TransactionRow
+                    key={transaction.id}
+                    transaction={transaction}
+                    allocationTotals={allocationTotals}
+                    isDeleting={deletingId === transaction.id}
+                    deletingRepaymentId={deletingRepaymentId}
+                    onEdit={openEdit}
+                    onDelete={setTransactionToDelete}
+                    onAddRepayment={openRepayment}
+                    onDeleteRepayment={(row, repayment) => {
+                      setRepaymentToDelete({ transaction: row, repaymentId: repayment.id });
+                    }}
+                  />
+                ))
+              )}
+            </>
           )}
         </div>
       )}
@@ -363,6 +403,7 @@ export function PersonLedgerPage() {
           key={editingTransaction?.id ?? 'create'}
           personId={personId}
           initialValues={initialValues}
+          initialInterest={initialInterest}
           isSaving={isSaving}
           fieldErrors={fieldErrors}
           globalError={globalError}
@@ -375,7 +416,9 @@ export function PersonLedgerPage() {
         {repayingTransaction ? (
           <RepaymentForm
             key={repayingTransaction.id}
-            outstandingCents={repayingTransaction.outstandingCents}
+            transactionId={repayingTransaction.id}
+            totalOwedCents={repayingTransaction.outstandingCents + repayingTransaction.accruedInterestCents}
+            accruedInterestCents={repayingTransaction.accruedInterestCents}
             isSaving={isSaving}
             fieldErrors={fieldErrors}
             globalError={globalError}
@@ -387,12 +430,12 @@ export function PersonLedgerPage() {
       <Modal title="Record payment" isOpen={isPersonPaymentOpen} onClose={closePersonPayment}>
         <RepaymentForm
           key={isPersonPaymentOpen ? 'person-payment' : 'person-payment-closed'}
-          outstandingCents={outstandingLendCents}
+          transactionId=""
+          totalOwedCents={outstandingLendCents}
+          accruedInterestCents={0}
           isSaving={isSaving}
           fieldErrors={fieldErrors}
           globalError={globalError}
-          remainingLabel="They still owe you"
-          hint="Applies to the oldest outstanding loans first. Use Add repayment on a row if this cash is for a specific loan."
           submitLabel="Save payment"
           onSubmit={handlePersonPayment}
         />

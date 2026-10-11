@@ -10,7 +10,6 @@ import { DashboardDueList } from './DashboardDueList';
 import { DashboardPeopleList } from './DashboardPeopleList';
 
 type AttentionTab = 'overdue' | 'upcoming';
-type PeopleTab = 'theyOweYou' | 'youOweThem';
 
 /**
  * Home screen: lend vs borrow totals, then final amount, due lists, and people.
@@ -18,7 +17,6 @@ type PeopleTab = 'theyOweYou' | 'youOweThem';
 export function DashboardPage() {
   const { dashboard, isLoading, error } = useDashboard();
   const [attentionTab, setAttentionTab] = useState<AttentionTab>('overdue');
-  const [peopleTab, setPeopleTab] = useState<PeopleTab>('theyOweYou');
 
   if (isLoading) {
     return <Spinner />;
@@ -29,8 +27,7 @@ export function DashboardPage() {
   }
 
   const net = dashboard.totalOwedToUserCents - dashboard.totalUserOwesCents;
-  const theyOweYou = dashboard.people.filter((person) => person.netBalanceCents > 0);
-  const youOweThem = dashboard.people.filter((person) => person.netBalanceCents < 0);
+  const peopleWithBalance = dashboard.people.filter((person) => person.netBalanceCents !== 0);
 
   return (
     <main>
@@ -77,21 +74,7 @@ export function DashboardPage() {
             All people
           </Link>
         </div>
-        <SegmentedTabs
-          ariaLabel="Open balances"
-          value={peopleTab}
-          options={[
-            { id: 'theyOweYou', label: 'They owe you', count: theyOweYou.length },
-            { id: 'youOweThem', label: 'You owe them', count: youOweThem.length },
-          ]}
-          onChange={setPeopleTab}
-        />
-        <div className="mt-3">
-          <DashboardPeopleList
-            people={peopleTab === 'theyOweYou' ? theyOweYou : youOweThem}
-            side={peopleTab}
-          />
-        </div>
+        <DashboardPeopleList people={peopleWithBalance} />
       </section>
     </main>
   );

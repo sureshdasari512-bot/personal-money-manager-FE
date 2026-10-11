@@ -82,8 +82,26 @@ export interface RepaymentAllocation {
   updatedBy: string | null;
 }
 
+export type InterestPeriod = 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';
+
+export interface TransactionInterestConfig {
+  id: string;
+  transactionId: string;
+  userId: string;
+  interestRateBps: number;
+  interestPeriod: InterestPeriod;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
 export interface LedgerTransaction extends Transaction {
   outstandingCents: number;
+  accruedInterestCents: number;
+  interestConfig: TransactionInterestConfig | null;
   repayments: Repayment[];
 }
 

@@ -6,25 +6,18 @@ import type { DashboardPersonBalance } from '../types';
 
 interface DashboardPeopleListProps {
   people: DashboardPersonBalance[];
-  side: 'theyOweYou' | 'youOweThem';
 }
 
 /**
- * People on one side of the ledger only. Amounts are always positive.
- *
- * @param people - Filtered dashboard person rows
- * @param side - They owe you vs you owe them
+ * All people with an open balance, sorted largest first.
+ * Green = they owe you, blue = you owe them.
  */
-export function DashboardPeopleList({ people, side }: DashboardPeopleListProps) {
+export function DashboardPeopleList({ people }: DashboardPeopleListProps) {
   if (people.length === 0) {
     return (
       <EmptyState
-        title={side === 'theyOweYou' ? 'Nobody owes you' : 'You do not owe anyone'}
-        description={
-          side === 'theyOweYou'
-            ? 'People you lent to will show here while money is still outstanding.'
-            : 'People you borrowed from will show here while money is still outstanding.'
-        }
+        title="No open balances"
+        description="People you lend to or borrow from will show here while money is outstanding."
         action={
           <Link
             to="/people"
@@ -37,33 +30,43 @@ export function DashboardPeopleList({ people, side }: DashboardPeopleListProps) 
     );
   }
 
+  const sorted = [...people].sort(
+    (a, b) => Math.abs(b.netBalanceCents) - Math.abs(a.netBalanceCents),
+  );
+
   return (
     <ul className="flex flex-col gap-3">
-      {people.map((person) => (
-        <li key={person.personId}>
-          <Link
-            to={`/people/${person.personId}`}
-            className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
-            style={{
-              background: tokens.color.surface,
-              borderRadius: tokens.radius.lg,
-              boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
-            }}
-          >
-            <div className="min-w-0">
-              <p className="truncate font-semibold" style={{ color: tokens.color.ink }}>
-                {person.personName}
+      {sorted.map((person) => {
+        const theyOwe = person.netBalanceCents > 0;
+        const accent = theyOwe ? tokens.color.success : tokens.color.info;
+        const directionLabel = theyOwe ? 'Owes you' : 'You owe';
+
+        return (
+          <li key={person.personId}>
+            <Link
+              to={`/people/${person.personId}`}
+              className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+              style={{
+                background: tokens.color.surface,
+                borderRadius: tokens.radius.lg,
+                boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
+              }}
+            >
+              <div className="min-w-0">
+                <p className="truncate font-semibold" style={{ color: tokens.color.ink }}>
+                  {person.personName}
+                </p>
+                <p className="mt-0.5 text-xs font-medium" style={{ color: accent }}>
+                  {directionLabel}
+                </p>
+              </div>
+              <p className="shrink-0 text-lg font-semibold" style={{ color: tokens.color.ink }}>
+                {formatCurrency(Math.abs(person.netBalanceCents))}
               </p>
-              <p className="mt-0.5 text-sm" style={{ color: tokens.color.muted }}>
-                {side === 'theyOweYou' ? 'They owe you' : 'You owe them'}
-              </p>
-            </div>
-            <p className="shrink-0 text-lg font-semibold" style={{ color: tokens.color.ink }}>
-              {formatCurrency(Math.abs(person.netBalanceCents))}
-            </p>
-          </Link>
-        </li>
-      ))}
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }
