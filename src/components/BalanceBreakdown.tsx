@@ -3,6 +3,8 @@ import { formatCurrency } from '../lib/formatCurrency';
 
 interface BalanceBreakdownProps {
   theyOweYouCents: number;
+  /** Principal-only portion of theyOweYouCents — shown in brackets */
+  theyOweYouPrincipalCents?: number;
   youOweThemCents: number;
   netBalanceCents: number;
   scope?: 'overall' | 'person';
@@ -19,6 +21,7 @@ interface BalanceBreakdownProps {
  */
 export function BalanceBreakdown({
   theyOweYouCents,
+  theyOweYouPrincipalCents,
   youOweThemCents,
   netBalanceCents,
   scope = 'overall',
@@ -29,13 +32,14 @@ export function BalanceBreakdown({
         <AmountCard
           eyebrow="Lent"
           amountCents={theyOweYouCents}
-          hint="Outstanding from money you lent"
+          principalCents={theyOweYouPrincipalCents}
+          hint="Total to collect (principal + interest)"
           tone="lend"
         />
         <AmountCard
           eyebrow="Borrowed"
           amountCents={youOweThemCents}
-          hint="Outstanding from money you borrowed"
+          hint="Amount you still need to return"
           tone="borrow"
         />
       </div>
@@ -67,6 +71,8 @@ export function BalanceBreakdown({
 interface AmountCardProps {
   eyebrow: string;
   amountCents: number;
+  /** When provided, shown in brackets as the principal-only figure */
+  principalCents?: number;
   hint: string;
   tone: 'lend' | 'borrow';
 }
@@ -74,13 +80,16 @@ interface AmountCardProps {
 /**
  * One side of the lend/borrow split.
  *
- * @param eyebrow - Short label
- * @param amountCents - Outstanding on that side
- * @param hint - Plain-language explanation
- * @param tone - Lend vs borrow color
+ * @param eyebrow       - Short label
+ * @param amountCents   - Live total (principal + interest)
+ * @param principalCents - Principal-only, shown in brackets when different from amountCents
+ * @param hint          - Plain-language explanation
+ * @param tone          - Lend vs borrow color
  */
-function AmountCard({ eyebrow, amountCents, hint, tone }: AmountCardProps) {
+function AmountCard({ eyebrow, amountCents, principalCents, hint, tone }: AmountCardProps) {
   const accent = tone === 'lend' ? tokens.color.success : tokens.color.info;
+  const showPrincipal =
+    principalCents !== undefined && principalCents !== amountCents && principalCents > 0;
 
   return (
     <div
@@ -96,6 +105,11 @@ function AmountCard({ eyebrow, amountCents, hint, tone }: AmountCardProps) {
       </p>
       <p className="mt-1 text-2xl font-semibold tracking-tight" style={{ color: tokens.color.ink }}>
         {formatCurrency(amountCents)}
+        {showPrincipal ? (
+          <span className="ml-1.5 text-sm font-normal" style={{ color: tokens.color.muted }}>
+            ({formatCurrency(principalCents)} principal)
+          </span>
+        ) : null}
       </p>
       <p className="mt-1 text-sm" style={{ color: tokens.color.muted }}>
         {hint}
@@ -114,13 +128,13 @@ function AmountCard({ eyebrow, amountCents, hint, tone }: AmountCardProps) {
 function netCaption(netBalanceCents: number, scope: 'overall' | 'person'): string {
   if (netBalanceCents > 0) {
     return scope === 'person'
-      ? 'After both sides, they still owe you this much.'
-      : 'After both sides, people still owe you this much.';
+      ? 'After both sides, this is the net amount to collect.'
+      : 'After both sides, this is the net amount to collect.';
   }
   if (netBalanceCents < 0) {
     return scope === 'person'
-      ? 'After both sides, you still owe them this much.'
-      : 'After both sides, you still owe people this much.';
+      ? 'After both sides, this is the net amount to return.'
+      : 'After both sides, this is the net amount to return.';
   }
   return scope === 'person'
     ? 'After both sides, you are settled with this person.'

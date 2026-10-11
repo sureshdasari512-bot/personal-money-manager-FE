@@ -285,8 +285,10 @@ export function PersonLedgerPage() {
   const initialInterest = editingTransaction
     ? transactions.find((t) => t.id === editingTransaction.id)?.interestConfig ?? null
     : null;
-  const { theyOweYouCents, youOweThemCents } = outstandingByType(transactions);
+  const { theyOweYouCents, theyOweYouPrincipalCents, youOweThemCents } = outstandingByType(transactions);
   const outstandingLendCents = theyOweYouCents;
+  // Recompute net on the FE so it includes accrued interest (BE netBalanceCents is principal-only).
+  const liveNetBalanceCents = theyOweYouCents - youOweThemCents;
   const allocationTotals = totalsByAllocationId(transactions);
   const lendCount = transactions.filter((transaction) => transaction.type === 'lend').length;
   const borrowCount = transactions.filter((transaction) => transaction.type === 'borrow').length;
@@ -320,8 +322,9 @@ export function PersonLedgerPage() {
       <div className="mb-6">
         <BalanceBreakdown
           theyOweYouCents={theyOweYouCents}
+          theyOweYouPrincipalCents={theyOweYouPrincipalCents}
           youOweThemCents={youOweThemCents}
-          netBalanceCents={netBalanceCents}
+          netBalanceCents={liveNetBalanceCents}
           scope="person"
         />
       </div>
@@ -348,17 +351,9 @@ export function PersonLedgerPage() {
             onChange={setLedgerTab}
           />
 
-          {/* ── Interest tab ──────────────────────────────── */}
+          {/* ── Interest tab — summary only ─────────────── */}
           {ledgerTab === 'interest' ? (
-            <InterestTab
-              transactions={transactions}
-              isSaving={isInterestSaving}
-              fieldErrors={interestFieldErrors}
-              globalError={interestGlobalError}
-              onUpsert={handleInterestUpsert}
-              onRemove={handleInterestDelete}
-              onReload={reload}
-            />
+            <InterestTab transactions={transactions} />
           ) : (
             /* ── Transactions tabs (all / lend / borrow) ── */
             <>
@@ -380,12 +375,18 @@ export function PersonLedgerPage() {
                     allocationTotals={allocationTotals}
                     isDeleting={deletingId === transaction.id}
                     deletingRepaymentId={deletingRepaymentId}
+                    isSavingInterest={isInterestSaving}
+                    interestFieldErrors={interestFieldErrors}
+                    interestGlobalError={interestGlobalError}
                     onEdit={openEdit}
                     onDelete={setTransactionToDelete}
                     onAddRepayment={openRepayment}
                     onDeleteRepayment={(row, repayment) => {
                       setRepaymentToDelete({ transaction: row, repaymentId: repayment.id });
                     }}
+                    onUpsertInterest={handleInterestUpsert}
+                    onRemoveInterest={handleInterestDelete}
+                    onReload={reload}
                   />
                 ))
               )}
@@ -459,7 +460,7 @@ export function PersonLedgerPage() {
 
       <ConfirmDialog
         title="Remove this repayment?"
-        description="The outstanding balance on this transaction will go back up by this amount."
+        description="This will reverse the repayment. Any portion that cleared interest will be added back as unpaid interest; any portion that reduced principal will restore it."
         confirmLabel="Remove repayment"
         isOpen={Boolean(repaymentToDelete)}
         isConfirming={Boolean(deletingRepaymentId)}

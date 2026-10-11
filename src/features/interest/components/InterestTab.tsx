@@ -1,55 +1,41 @@
 import { tokens } from '../../../lib/design-tokens';
 import { formatCurrency } from '../../../lib/formatCurrency';
-import type { FieldErrors } from '../../../types/errors';
-import type { InterestConfigPayload, LedgerTransaction } from '../types';
-import { InterestConfigCard } from './InterestConfigCard';
+import type { LedgerTransaction } from '../types';
 
 interface InterestTabProps {
   transactions: LedgerTransaction[];
-  isSaving: boolean;
-  fieldErrors: FieldErrors;
-  globalError: string | null;
-  onUpsert: (transaction: LedgerTransaction, payload: InterestConfigPayload) => Promise<boolean>;
-  onRemove: (transaction: LedgerTransaction) => Promise<boolean>;
-  onReload: () => Promise<void>;
 }
 
 /**
- * Full-page Interest tab content for the person ledger.
- *
- * Shows:
- *  1. A summary card — total accrued interest across all transactions
- *  2. One InterestConfigCard per transaction — configure / view / remove interest
- *
- * Purely presentational — all mutations flow through props from PersonLedgerPage.
+ * Interest tab — shows only the total interest summary across all
+ * interest-bearing loans. Per-loan detail (edit/remove interest, breakdown)
+ * lives directly on each transaction card in the All / Lent tabs so the
+ * user never has to switch tabs to act on a loan.
  *
  * @param transactions - All ledger transactions for this person
- * @param isSaving     - In-flight flag from the parent hook
- * @param fieldErrors  - Per-field API errors forwarded to the active form
- * @param globalError  - Form-level API error forwarded to the active form
- * @param onUpsert     - Create or update interest config
- * @param onRemove     - Soft-delete interest config
- * @param onReload     - Reload the ledger after any mutation
  */
-export function InterestTab({
-  transactions,
-  isSaving,
-  fieldErrors,
-  globalError,
-  onUpsert,
-  onRemove,
-  onReload,
-}: InterestTabProps) {
-  // Only transactions with interest configured belong in this tab.
+export function InterestTab({ transactions }: InterestTabProps) {
   const interestTransactions = transactions.filter((tx) => tx.interestConfig !== null);
   const totalAccruedCents = interestTransactions.reduce(
     (sum, tx) => sum + tx.accruedInterestCents,
     0,
   );
+  const totalPrincipalCents = interestTransactions.reduce(
+    (sum, tx) => sum + tx.outstandingCents,
+    0,
+  );
+
+  if (interestTransactions.length === 0) {
+    return (
+      <p className="text-sm" style={{ color: tokens.color.muted }}>
+        No interest-bearing loans yet. Add interest to a loan from the Lent tab.
+      </p>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── Summary card ──────────────────────────────────────── */}
+      {/* ── Overall summary ── */}
       <div
         className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
         style={{
@@ -58,20 +44,34 @@ export function InterestTab({
           boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
         }}
       >
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: tokens.color.muted }}>
-            Total interest accrued
-          </p>
-          <p
-            className="mt-1 text-2xl font-bold"
-            style={{ color: totalAccruedCents > 0 ? tokens.color.warning : tokens.color.ink }}
-          >
-            {formatCurrency(totalAccruedCents)}
-          </p>
-          <p className="mt-0.5 text-xs" style={{ color: tokens.color.muted }}>
-            Across {interestTransactions.length} interest-bearing loan
-            {interestTransactions.length !== 1 ? 's' : ''}
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:gap-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: tokens.color.muted }}>
+              Total principal outstanding
+            </p>
+            <p className="mt-0.5 text-2xl font-bold" style={{ color: tokens.color.ink }}>
+              {formatCurrency(totalPrincipalCents)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: tokens.color.muted }}>
+              Total interest accrued
+            </p>
+            <p
+              className="mt-0.5 text-2xl font-bold"
+              style={{ color: totalAccruedCents > 0 ? tokens.color.warning : tokens.color.ink }}
+            >
+              {formatCurrency(totalAccruedCents)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: tokens.color.muted }}>
+              Total to collect
+            </p>
+            <p className="mt-0.5 text-2xl font-bold" style={{ color: tokens.color.ink }}>
+              {formatCurrency(totalPrincipalCents + totalAccruedCents)}
+            </p>
+          </div>
         </div>
 
         <div
@@ -82,30 +82,57 @@ export function InterestTab({
             maxWidth: '18rem',
           }}
         >
-          Interest is <strong>advisory only</strong>. It does not auto-create
-          repayments — record them manually on the Transactions tab.
+          Interest is <strong>advisory only</strong>. Record repayments manually
+          on the Lent tab — each loan card has an "Add repayment" button.
         </div>
       </div>
 
-      {/* ── Per-transaction cards — interest loans only ───────── */}
-      {interestTransactions.length === 0 ? (
-        <p className="text-sm" style={{ color: tokens.color.muted }}>
-          No interest-bearing loans yet. Toggle "Add interest" when adding a transaction.
-        </p>
-      ) : (
-        interestTransactions.map((transaction) => (
-          <InterestConfigCard
-            key={transaction.id}
-            transaction={transaction}
-            isSaving={isSaving}
-            fieldErrors={fieldErrors}
-            globalError={globalError}
-            onUpsert={onUpsert}
-            onRemove={onRemove}
-            onReload={onReload}
-          />
-        ))
-      )}
+      {/* ── Per-loan summary rows (read-only) ── */}
+      <div className="flex flex-col gap-2">
+        {interestTransactions.map((tx) => (
+          <div
+            key={tx.id}
+            className="flex items-center justify-between gap-4 px-4 py-3"
+            style={{
+              background: tokens.color.surface,
+              borderRadius: tokens.radius.md,
+              boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
+            }}
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-semibold" style={{ color: tokens.color.ink }}>
+                {formatCurrency(tx.amountCents)} loan
+              </p>
+              <p className="text-xs" style={{ color: tokens.color.muted }}>
+                {tx.transactionDate}
+                {tx.interestConfig
+                  ? ` · ${tx.interestConfig.interestRateBps / 100}% / month`
+                  : ''}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-0.5">
+              <p className="text-xs" style={{ color: tokens.color.muted }}>
+                Principal{' '}
+                <span className="font-medium" style={{ color: tokens.color.ink }}>
+                  {formatCurrency(tx.outstandingCents)}
+                </span>
+              </p>
+              <p className="text-xs" style={{ color: tokens.color.warning }}>
+                + Interest{' '}
+                <span className="font-medium">
+                  {formatCurrency(tx.accruedInterestCents)}
+                </span>
+              </p>
+              <p
+                className="text-xs font-semibold"
+                style={{ color: tokens.color.ink }}
+              >
+                = {formatCurrency(tx.outstandingCents + tx.accruedInterestCents)}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

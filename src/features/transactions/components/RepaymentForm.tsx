@@ -97,7 +97,7 @@ export function RepaymentForm({
       return;
     }
     if (amountCents > totalOwedCents) {
-      setAmountError(`Amount cannot exceed the total owed (${formatCurrency(totalOwedCents)})`);
+      setAmountError(`Amount cannot exceed the total to pay (${formatCurrency(totalOwedCents)})`);
       return;
     }
     setAmountError(undefined);
@@ -137,7 +137,7 @@ export function RepaymentForm({
           className="mt-2 flex items-center justify-between border-t pt-2 text-sm font-semibold"
           style={{ borderColor: tokens.color.line }}
         >
-          <span style={{ color: tokens.color.ink }}>Total owed</span>
+          <span style={{ color: tokens.color.ink }}>Total to pay</span>
           <span style={{ color: tokens.color.ink }}>{formatCurrency(totalOwedCents)}</span>
         </div>
       </div>
