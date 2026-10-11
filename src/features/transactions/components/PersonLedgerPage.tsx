@@ -43,7 +43,7 @@ type LedgerTab = 'all' | 'lend' | 'borrow' | 'interest';
 export function PersonLedgerPage() {
   const { personId } = useParams<{ personId: string }>();
   const { person, isLoading: isPersonLoading, error: personError } = usePerson(personId ?? '');
-  const { transactions, netBalanceCents, isLoading, error, reload } = useTransactions(
+  const { transactions, isLoading, error, reload } = useTransactions(
     personId ?? '',
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
