@@ -72,7 +72,7 @@ export function TransactionRow({
   const sortedRepayments = transaction.repayments;
   const lastRepaymentDate =
     sortedRepayments.length > 0
-      ? sortedRepayments[sortedRepayments.length - 1].paidOn
+      ? sortedRepayments[sortedRepayments.length - 1]!.paidOn
       : null;
   const currentInterestFrom = lastRepaymentDate ?? transaction.transactionDate;
   const currentInterestTo = todayIsoDate();
@@ -286,7 +286,7 @@ export function TransactionRow({
 
                   // Period this repayment covers: previous paidOn (or loan date) → this paidOn.
                   const periodFrom =
-                    idx === 0 ? transaction.transactionDate : sortedRepayments[idx - 1].paidOn;
+                    idx === 0 ? transaction.transactionDate : sortedRepayments[idx - 1]!.paidOn;
                   const periodTo = repayment.paidOn;
                   const showPeriod = hasInterest && (towardInterestCents > 0);
 
