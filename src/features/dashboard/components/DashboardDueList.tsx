@@ -68,9 +68,17 @@ export function DashboardDueList({ items, variant }: DashboardDueListProps) {
                 <p className="text-lg font-semibold" style={{ color: tokens.color.ink }}>
                   {formatCurrency(item.outstandingCents)}
                 </p>
-                <p className="mt-0.5 text-xs" style={{ color: tokens.color.muted }}>
-                  still outstanding
-                </p>
+                {item.accruedInterestCents > 0 ? (
+                  <p className="mt-0.5 text-xs" style={{ color: tokens.color.muted }}>
+                    {formatCurrency(item.outstandingPrincipalCents)} principal
+                    {' + '}
+                    {formatCurrency(item.accruedInterestCents)} interest
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-xs" style={{ color: tokens.color.muted }}>
+                    still outstanding
+                  </p>
+                )}
               </div>
             </div>
           </Link>

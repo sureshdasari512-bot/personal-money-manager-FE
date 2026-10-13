@@ -38,6 +38,7 @@ export function DashboardPage() {
       />
       <BalanceBreakdown
         theyOweYouCents={dashboard.totalOwedToUserCents}
+        theyOweYouPrincipalCents={dashboard.totalOwedToUserPrincipalCents}
         youOweThemCents={dashboard.totalUserOwesCents}
         netBalanceCents={net}
         scope="overall"

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { EmptyState } from '../../../components/EmptyState';
 import { tokens } from '../../../lib/design-tokens';
 import { formatCurrency } from '../../../lib/formatCurrency';
+import { formatDate } from '../../../lib/formatDate';
 import type { DashboardPersonBalance } from '../types';
 
 interface DashboardPeopleListProps {
@@ -39,7 +40,15 @@ export function DashboardPeopleList({ people }: DashboardPeopleListProps) {
       {sorted.map((person) => {
         const theyOwe = person.netBalanceCents > 0;
         const accent = theyOwe ? tokens.color.success : tokens.color.info;
-        const directionLabel = theyOwe ? 'Owes you' : 'You owe';
+        const hasInterest =
+          person.accruedInterestCents > 0 &&
+          person.interestPeriodFrom != null &&
+          person.interestPeriodTo != null;
+        const interestLabel = hasInterest
+          ? `Interest: ${formatDate(person.interestPeriodFrom!)} – ${formatDate(person.interestPeriodTo!)}`
+          : theyOwe
+            ? 'Owes you'
+            : 'You owe';
 
         return (
           <li key={person.personId}>
@@ -57,12 +66,19 @@ export function DashboardPeopleList({ people }: DashboardPeopleListProps) {
                   {person.personName}
                 </p>
                 <p className="mt-0.5 text-xs font-medium" style={{ color: accent }}>
-                  {directionLabel}
+                  {interestLabel}
                 </p>
               </div>
-              <p className="shrink-0 text-lg font-semibold" style={{ color: tokens.color.ink }}>
-                {formatCurrency(Math.abs(person.netBalanceCents))}
-              </p>
+              <div className="shrink-0 text-right">
+                <p className="text-lg font-semibold" style={{ color: tokens.color.ink }}>
+                  {formatCurrency(Math.abs(person.netBalanceCents))}
+                </p>
+                {hasInterest ? (
+                  <p className="mt-0.5 text-xs" style={{ color: tokens.color.muted }}>
+                    incl. {formatCurrency(person.accruedInterestCents)} interest
+                  </p>
+                ) : null}
+              </div>
             </Link>
           </li>
         );
