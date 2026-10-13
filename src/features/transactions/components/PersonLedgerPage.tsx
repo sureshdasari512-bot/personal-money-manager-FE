@@ -482,7 +482,7 @@ export function PersonLedgerPage() {
 function toFormValues(transaction: Transaction): TransactionFormValues {
   return {
     type: transaction.type,
-    amount: (transaction.amountCents / 100).toFixed(2),
+    amount: String(Math.round(transaction.amountCents / 100)),
     transactionDate: transaction.transactionDate.slice(0, 10),
     ...(transaction.dueDate ? { dueDate: transaction.dueDate.slice(0, 10) } : {}),
     ...(transaction.notes ? { notes: transaction.notes } : {}),

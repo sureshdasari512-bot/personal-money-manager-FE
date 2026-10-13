@@ -9,5 +9,7 @@ export function formatCurrency(amountCents: number, currency = 'INR'): string {
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency,
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
   }).format(amountCents / 100);
 }
