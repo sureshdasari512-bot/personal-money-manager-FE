@@ -66,16 +66,14 @@ export function TransactionRow({
   const totalRepaidCents = transaction.repayments.reduce((sum, r) => sum + r.amountCents, 0);
   const totalPayableCents = transaction.outstandingCents + transaction.accruedInterestCents;
 
-  // Repayments are already sorted paidOn ASC from the API.
-  // interestPeriodStart = transactionDate for the first repayment, previous paidOn thereafter.
-  // currentInterestFrom = last repayment's paidOn, or transactionDate if no repayments yet.
-  const sortedRepayments = transaction.repayments;
-  const lastRepaymentDate =
-    sortedRepayments.length > 0
-      ? sortedRepayments[sortedRepayments.length - 1]!.paidOn
-      : null;
-  const currentInterestFrom = lastRepaymentDate ?? transaction.transactionDate;
-  const currentInterestTo = todayIsoDate();
+  // Total interest ever generated = interest portions already paid out + currently accrued (pending).
+  const totalInterestPaidCents = transaction.repayments.reduce(
+    (sum, r) => sum + (r.amountCents - r.towardPrincipalCents),
+    0,
+  );
+  const totalInterestGeneratedCents = totalInterestPaidCents + transaction.accruedInterestCents;
+
+
 
   /**
    * Submits the interest upsert, closes modal, reloads on success.
@@ -142,11 +140,8 @@ export function TransactionRow({
 
         {/* ── Amount + breakdown ── */}
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          {/* Original loan amount — always prominent */}
+          {/* Original transaction amount — always prominent */}
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide" style={{ color: tokens.color.muted }}>
-              Loan amount
-            </p>
             <p className="text-2xl font-semibold" style={{ color: tokens.color.ink }}>
               {formatCurrency(transaction.amountCents)}
             </p>
@@ -165,17 +160,12 @@ export function TransactionRow({
                   {formatCurrency(transaction.outstandingCents)}
                 </span>
               </div>
-              <div className="flex flex-col">
                 <div className="flex items-center justify-between gap-6">
                   <span style={{ color: tokens.color.warning }}>Interest</span>
                   <span className="font-medium" style={{ color: tokens.color.warning }}>
                     + {formatCurrency(transaction.accruedInterestCents)}
                   </span>
                 </div>
-                <p className="text-xs" style={{ color: tokens.color.muted }}>
-                  {formatDate(currentInterestFrom)} – {formatDate(currentInterestTo)}
-                </p>
-              </div>
               <div
                 className="mt-1.5 flex items-center justify-between gap-6 border-t pt-1.5 font-semibold"
                 style={{ borderColor: tokens.color.line }}
@@ -202,15 +192,25 @@ export function TransactionRow({
           )}
         </div>
 
+        {/* ── Total interest generated since loan start ── */}
+        {hasInterest && totalInterestGeneratedCents > 0 ? (
+          <p className="mt-1.5 text-xs" style={{ color: tokens.color.muted }}>
+            Total interest since {formatDate(transaction.transactionDate)}:{' '}
+            <span className="font-semibold" style={{ color: tokens.color.warning }}>
+              {formatCurrency(totalInterestGeneratedCents)}
+            </span>
+          </p>
+        ) : null}
+
         {/* ── Action buttons ── */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {!settled ? (
-            <Button variant="secondary" onClick={() => onAddRepayment(transaction)}>
+            <Button variant="outline" onClick={() => onAddRepayment(transaction)}>
               Add repayment
             </Button>
           ) : null}
           {!hasRepayments ? (
-            <Button variant="secondary" onClick={() => onEdit(transaction)}>
+            <Button variant="outline" onClick={() => onEdit(transaction)}>
               Edit
             </Button>
           ) : null}
@@ -218,11 +218,11 @@ export function TransactionRow({
           {transaction.type === 'lend' && !settled ? (
             hasInterest ? (
               <>
-                <Button variant="secondary" onClick={() => setIsInterestFormOpen(true)}>
+                <Button variant="outline" onClick={() => setIsInterestFormOpen(true)}>
                   Edit interest
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   isLoading={isSavingInterest}
                   onClick={handleInterestRemove}
                 >
@@ -230,7 +230,7 @@ export function TransactionRow({
                 </Button>
               </>
             ) : (
-              <Button variant="secondary" onClick={() => setIsInterestFormOpen(true)}>
+              <Button variant="outline" onClick={() => setIsInterestFormOpen(true)}>
                 Add interest
               </Button>
             )
@@ -270,7 +270,7 @@ export function TransactionRow({
 
             {repayOpen ? (
               <ul className="mt-2 space-y-2 px-1">
-                {transaction.repayments.map((repayment, idx) => {
+                {transaction.repayments.map((repayment) => {
                   const whenLabel = formatPaymentWhen(repayment.paidOn, repayment.createdAt);
                   const paymentTotalCents = repayment.allocationId
                     ? allocationTotals[repayment.allocationId]
@@ -284,11 +284,7 @@ export function TransactionRow({
                   const hasSplit = towardInterestCents > 0 && repayment.towardPrincipalCents > 0;
                   const isFullyInterest = towardInterestCents > 0 && repayment.towardPrincipalCents === 0;
 
-                  // Period this repayment covers: previous paidOn (or loan date) → this paidOn.
-                  const periodFrom =
-                    idx === 0 ? transaction.transactionDate : sortedRepayments[idx - 1]!.paidOn;
-                  const periodTo = repayment.paidOn;
-                  const showPeriod = hasInterest && (towardInterestCents > 0);
+
 
                   return (
                     <li
@@ -317,11 +313,7 @@ export function TransactionRow({
                             Interest payment only
                           </p>
                         ) : null}
-                        {showPeriod ? (
-                          <p className="mt-0.5 text-xs" style={{ color: tokens.color.muted }}>
-                            Covers {formatDate(periodFrom)} – {formatDate(periodTo)}
-                          </p>
-                        ) : null}
+
                         {splitLabel ? (
                           <p className="mt-0.5 text-xs" style={{ color: tokens.color.primary }}>
                             {splitLabel}

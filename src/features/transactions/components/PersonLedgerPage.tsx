@@ -24,7 +24,6 @@ import {
   upsertInterestConfig,
 } from '../api';
 import { useInterestConfig } from '../../interest/hooks/useInterestConfig';
-import { InterestTab } from '../../interest/components/InterestTab';
 import { useTransactions } from '../hooks/useTransactions';
 import type {
   CreateRepaymentPayload,
@@ -35,7 +34,7 @@ import { RepaymentForm } from './RepaymentForm';
 import { TransactionForm } from './TransactionForm';
 import { TransactionRow } from './TransactionRow';
 
-type LedgerTab = 'all' | 'lend' | 'borrow' | 'interest';
+type LedgerTab = 'all' | 'lend' | 'borrow';
 
 /**
  * Person-level ledger: history, net balance, transactions, and repayments.
@@ -311,7 +310,7 @@ export function PersonLedgerPage() {
         action={
           <div className="flex flex-wrap gap-2">
             {outstandingLendCents > 0 ? (
-              <Button variant="secondary" onClick={openPersonPayment}>
+              <Button variant="outline" onClick={openPersonPayment}>
                 Record payment
               </Button>
             ) : null}
@@ -346,17 +345,12 @@ export function PersonLedgerPage() {
               { id: 'all', label: 'All', count: transactions.length },
               { id: 'lend', label: 'Lent', count: lendCount },
               { id: 'borrow', label: 'Borrowed', count: borrowCount },
-              { id: 'interest', label: 'Interest' },
             ]}
             onChange={setLedgerTab}
           />
 
-          {/* ── Interest tab — summary only ─────────────── */}
-          {ledgerTab === 'interest' ? (
-            <InterestTab transactions={transactions} />
-          ) : (
-            /* ── Transactions tabs (all / lend / borrow) ── */
-            <>
+          {/* ── Transactions tabs (all / lend / borrow) ── */}
+          <>
               {visibleTransactions.length === 0 ? (
                 <EmptyState
                   title={ledgerTab === 'lend' ? 'Nothing lent yet' : 'Nothing borrowed yet'}
@@ -391,7 +385,6 @@ export function PersonLedgerPage() {
                 ))
               )}
             </>
-          )}
         </div>
       )}
 

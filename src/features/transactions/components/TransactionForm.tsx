@@ -188,7 +188,7 @@ export function TransactionForm({
         <button
           type="button"
           onClick={() => setWithInterest((v) => !v)}
-          className="flex w-full items-center justify-between px-4 py-3 text-left"
+          className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition-colors hover:bg-slate-50"
         >
           <div>
             <p className="text-sm font-semibold" style={{ color: tokens.color.ink }}>
@@ -237,7 +237,7 @@ export function TransactionForm({
 
             {/* Period picker */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-slate-700">Notification period</span>
+              <span className="text-sm font-medium text-slate-700">Interest period</span>
               <div className="grid grid-cols-2 gap-2">
                 {PERIOD_OPTIONS.map(({ value, label, hint }) => {
                   const selected = period === value;

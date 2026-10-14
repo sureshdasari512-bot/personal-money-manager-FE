@@ -47,7 +47,7 @@ export function DashboardPeopleList({ people }: DashboardPeopleListProps) {
         const interestLabel = hasInterest
           ? `Interest: ${formatDate(person.interestPeriodFrom!)} – ${formatDate(person.interestPeriodTo!)}`
           : theyOwe
-            ? 'Owes you'
+            ? 'To collect'
             : 'You owe';
 
         return (

@@ -155,7 +155,7 @@ function PersonRow({ person, deletingId, onEdit, onDelete }: PersonRowProps) {
         >
           Ledger
         </Link>
-        <Button variant="secondary" onClick={() => onEdit(person)}>
+        <Button variant="outline" onClick={() => onEdit(person)}>
           Edit
         </Button>
         <Button

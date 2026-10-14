@@ -38,7 +38,7 @@ export function RepaymentForm({
   isSaving,
   fieldErrors = {},
   globalError,
-  submitLabel = 'Confirm repayment',
+  submitLabel = 'Save repayment',
   onSubmit,
 }: RepaymentFormProps) {
   const [amount, setAmount] = useState('');

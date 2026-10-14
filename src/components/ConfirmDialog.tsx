@@ -52,7 +52,7 @@ export function ConfirmDialog({
           {description}
         </p>
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button variant="secondary" disabled={isConfirming} onClick={onCancel}>
+          <Button variant="outline" disabled={isConfirming} onClick={onCancel}>
             Cancel
           </Button>
           <Button variant="danger" isLoading={isConfirming} onClick={onConfirm}>

@@ -127,14 +127,10 @@ function AmountCard({ eyebrow, amountCents, principalCents, hint, tone }: Amount
  */
 function netCaption(netBalanceCents: number, scope: 'overall' | 'person'): string {
   if (netBalanceCents > 0) {
-    return scope === 'person'
-      ? 'After both sides, this is the net amount to collect.'
-      : 'After both sides, this is the net amount to collect.';
+    return 'After both sides, this is the net amount to collect.';
   }
   if (netBalanceCents < 0) {
-    return scope === 'person'
-      ? 'After both sides, this is the net amount to return.'
-      : 'After both sides, this is the net amount to return.';
+    return 'After both sides, this is the net amount to return.';
   }
   return scope === 'person'
     ? 'After both sides, you are settled with this person.'

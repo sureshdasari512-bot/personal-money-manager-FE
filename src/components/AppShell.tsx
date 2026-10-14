@@ -49,7 +49,7 @@ export function AppShell() {
               <p className="max-w-40 truncate text-sm font-medium text-slate-800">{user?.email}</p>
               <StatusBadge label={user?.role ?? 'user'} tone={isAdmin ? 'info' : 'neutral'} />
             </div>
-            <Button variant="ghost" onClick={() => void logout()}>
+            <Button variant="outline" onClick={() => void logout()}>
               Sign out
             </Button>
           </div>

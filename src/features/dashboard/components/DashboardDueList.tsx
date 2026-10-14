@@ -47,7 +47,7 @@ export function DashboardDueList({ items, variant }: DashboardDueListProps) {
             <div className="flex flex-wrap items-center gap-2">
               {variant === 'overdue' ? <StatusBadge label="Overdue" tone="danger" /> : null}
               <StatusBadge
-                label={item.type === 'lend' ? 'They owe you' : 'You owe them'}
+                label={item.type === 'lend' ? 'To collect' : 'You owe'}
                 tone={item.type === 'lend' ? 'success' : 'info'}
                 emphasis="secondary"
               />

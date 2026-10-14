@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { Button } from './Button';
 
 interface ModalProps {
   title: string;
@@ -35,9 +34,16 @@ export function Modal({ title, isOpen, onClose, children }: ModalProps) {
           <h2 id="modal-title" className="text-lg font-semibold">
             {title}
           </h2>
-          <Button variant="ghost" onClick={onClose} aria-label="Close dialog">
-            Close
-          </Button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close dialog"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         {/* Scrollable body */}
         <div className="overflow-y-auto px-5 pb-5">

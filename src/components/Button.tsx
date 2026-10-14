@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from 'react';
 import { tokens } from '../lib/design-tokens';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'danger' | 'ghost' | 'secondary';
+  variant?: 'primary' | 'danger' | 'ghost' | 'secondary' | 'outline';
   isLoading?: boolean;
 }
 
@@ -25,6 +25,7 @@ export function Button({
     secondary: 'bg-slate-100 text-slate-800 hover:bg-slate-200',
     danger: 'bg-red-600 text-white hover:bg-red-700',
     ghost: 'bg-transparent text-slate-600 hover:bg-slate-100',
+    outline: 'bg-transparent text-blue-700 ring-1 ring-inset ring-blue-700 hover:bg-blue-50',
   } as const;
 
   return (
