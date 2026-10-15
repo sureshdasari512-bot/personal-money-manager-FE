@@ -3,9 +3,11 @@ import { formatCurrency } from '../lib/formatCurrency';
 
 interface BalanceBreakdownProps {
   theyOweYouCents: number;
-  /** Principal-only portion of theyOweYouCents — shown in brackets */
+  /** Principal-only portion of theyOweYouCents — shown in brackets when interest exists */
   theyOweYouPrincipalCents?: number;
   youOweThemCents: number;
+  /** Principal-only portion of youOweThemCents — shown in brackets when interest exists */
+  youOweThemPrincipalCents?: number;
   netBalanceCents: number;
   scope?: 'overall' | 'person';
 }
@@ -23,6 +25,7 @@ export function BalanceBreakdown({
   theyOweYouCents,
   theyOweYouPrincipalCents,
   youOweThemCents,
+  youOweThemPrincipalCents,
   netBalanceCents,
   scope = 'overall',
 }: BalanceBreakdownProps) {
@@ -39,6 +42,7 @@ export function BalanceBreakdown({
         <AmountCard
           eyebrow="Borrowed"
           amountCents={youOweThemCents}
+          principalCents={youOweThemPrincipalCents}
           hint="Amount you still need to return"
           tone="borrow"
         />

@@ -284,7 +284,7 @@ export function PersonLedgerPage() {
   const initialInterest = editingTransaction
     ? transactions.find((t) => t.id === editingTransaction.id)?.interestConfig ?? null
     : null;
-  const { theyOweYouCents, theyOweYouPrincipalCents, youOweThemCents } = outstandingByType(transactions);
+  const { theyOweYouCents, theyOweYouPrincipalCents, youOweThemCents, youOweThemPrincipalCents } = outstandingByType(transactions);
   const outstandingLendCents = theyOweYouCents;
   // Recompute net on the FE so it includes accrued interest (BE netBalanceCents is principal-only).
   const liveNetBalanceCents = theyOweYouCents - youOweThemCents;
@@ -304,7 +304,6 @@ export function PersonLedgerPage() {
         </Link>
       </p>
       <PageHeader
-        eyebrow="Ledger"
         title={person?.name ?? 'Person'}
         description="Lent and borrowed are shown separately. Final amount is after both sides."
         action={
@@ -323,6 +322,7 @@ export function PersonLedgerPage() {
           theyOweYouCents={theyOweYouCents}
           theyOweYouPrincipalCents={theyOweYouPrincipalCents}
           youOweThemCents={youOweThemCents}
+          youOweThemPrincipalCents={youOweThemPrincipalCents}
           netBalanceCents={liveNetBalanceCents}
           scope="person"
         />

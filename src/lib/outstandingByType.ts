@@ -1,31 +1,43 @@
 /**
  * Splits outstanding into lend vs borrow totals.
- * For lends: principal + accrued interest (the live amount they actually owe).
- * For borrows: principal only (interest on borrowed money is uncommon here).
+ * Both sides include accrued interest — a borrowed transaction can have interest
+ * configured on it just like a lent one.
  *
  * @param transactions - Rows that already include outstanding + interest amounts
- * @returns They-owe-you (lends, incl. interest) and you-owe-them (borrows)
+ * @returns They-owe-you (lends, incl. interest), you-owe-them (borrows, incl. interest),
+ *          and the principal-only figures for each side (shown in brackets on the UI)
  */
 export function outstandingByType(
   transactions: Array<{ type: 'lend' | 'borrow'; status: string; outstandingCents: number; accruedInterestCents: number }>,
-): { theyOweYouCents: number; theyOweYouPrincipalCents: number; youOweThemCents: number } {
+): {
+  theyOweYouCents: number;
+  theyOweYouPrincipalCents: number;
+  youOweThemCents: number;
+  youOweThemPrincipalCents: number;
+} {
   return transactions.reduce(
-    (totals, transaction) => {
+    (totals, tx) => {
       // Paid / cancelled transactions owe nothing — skip entirely regardless of what
       // the accrual figures say (stale accrual data must never inflate the balance).
-      if (transaction.status === 'paid' || transaction.status === 'cancelled') return totals;
-      if (transaction.type === 'lend') {
-        const liveTotal = transaction.outstandingCents + transaction.accruedInterestCents;
-        if (liveTotal <= 0) return totals;
+      if (tx.status === 'paid' || tx.status === 'cancelled') return totals;
+
+      const liveTotal = tx.outstandingCents + tx.accruedInterestCents;
+      if (liveTotal <= 0) return totals;
+
+      if (tx.type === 'lend') {
         return {
           ...totals,
           theyOweYouCents: totals.theyOweYouCents + liveTotal,
-          theyOweYouPrincipalCents: totals.theyOweYouPrincipalCents + transaction.outstandingCents,
+          theyOweYouPrincipalCents: totals.theyOweYouPrincipalCents + tx.outstandingCents,
         };
       }
-      if (transaction.outstandingCents <= 0) return totals;
-      return { ...totals, youOweThemCents: totals.youOweThemCents + transaction.outstandingCents };
+
+      return {
+        ...totals,
+        youOweThemCents: totals.youOweThemCents + liveTotal,
+        youOweThemPrincipalCents: totals.youOweThemPrincipalCents + tx.outstandingCents,
+      };
     },
-    { theyOweYouCents: 0, theyOweYouPrincipalCents: 0, youOweThemCents: 0 },
+    { theyOweYouCents: 0, theyOweYouPrincipalCents: 0, youOweThemCents: 0, youOweThemPrincipalCents: 0 },
   );
 }
