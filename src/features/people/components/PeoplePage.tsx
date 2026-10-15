@@ -151,9 +151,9 @@ function PersonRow({ person, deletingId, onEdit, onDelete }: PersonRowProps) {
       <div className="flex flex-wrap items-center gap-2">
         <Link
           to={`/people/${person.id}`}
-          className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-blue-700 ring-1 ring-inset ring-blue-700 transition-colors hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
         >
-          Ledger
+          View
         </Link>
         <Button variant="outline" onClick={() => onEdit(person)}>
           Edit

@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { EmptyState } from '../../../components/EmptyState';
 import { tokens } from '../../../lib/design-tokens';
 import { formatCurrency } from '../../../lib/formatCurrency';
-import { formatDate } from '../../../lib/formatDate';
 import type { DashboardPersonBalance } from '../types';
 
 interface DashboardPeopleListProps {
@@ -40,15 +39,12 @@ export function DashboardPeopleList({ people }: DashboardPeopleListProps) {
       {sorted.map((person) => {
         const theyOwe = person.netBalanceCents > 0;
         const accent = theyOwe ? tokens.color.success : tokens.color.info;
-        const hasInterest =
-          person.accruedInterestCents > 0 &&
-          person.interestPeriodFrom != null &&
-          person.interestPeriodTo != null;
-        const interestLabel = hasInterest
-          ? `Interest: ${formatDate(person.interestPeriodFrom!)} – ${formatDate(person.interestPeriodTo!)}`
-          : theyOwe
-            ? 'To collect'
-            : 'You owe';
+        const hasInterest = person.accruedInterestCents > 0;
+        const interestLabel = theyOwe
+          ? hasInterest
+            ? 'To collect · incl. interest'
+            : 'To collect'
+          : 'You owe';
 
         return (
           <li key={person.personId}>

@@ -7,10 +7,13 @@
  * @returns They-owe-you (lends, incl. interest) and you-owe-them (borrows)
  */
 export function outstandingByType(
-  transactions: Array<{ type: 'lend' | 'borrow'; outstandingCents: number; accruedInterestCents: number }>,
+  transactions: Array<{ type: 'lend' | 'borrow'; status: string; outstandingCents: number; accruedInterestCents: number }>,
 ): { theyOweYouCents: number; theyOweYouPrincipalCents: number; youOweThemCents: number } {
   return transactions.reduce(
     (totals, transaction) => {
+      // Paid / cancelled transactions owe nothing — skip entirely regardless of what
+      // the accrual figures say (stale accrual data must never inflate the balance).
+      if (transaction.status === 'paid' || transaction.status === 'cancelled') return totals;
       if (transaction.type === 'lend') {
         const liveTotal = transaction.outstandingCents + transaction.accruedInterestCents;
         if (liveTotal <= 0) return totals;

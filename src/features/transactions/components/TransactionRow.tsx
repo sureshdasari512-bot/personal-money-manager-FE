@@ -73,6 +73,14 @@ export function TransactionRow({
   );
   const totalInterestGeneratedCents = totalInterestPaidCents + transaction.accruedInterestCents;
 
+  // Interest period end: last repayment date when settled, today when still active.
+  const interestEndDate = settled
+    ? transaction.repayments.reduce<string | null>(
+        (latest, r) => (latest === null || r.paidOn > latest ? r.paidOn : latest),
+        null,
+      ) ?? transaction.transactionDate
+    : todayIsoDate();
+
 
 
   /**
@@ -195,7 +203,7 @@ export function TransactionRow({
         {/* ── Total interest generated since loan start ── */}
         {hasInterest && totalInterestGeneratedCents > 0 ? (
           <p className="mt-1.5 text-xs" style={{ color: tokens.color.muted }}>
-            Total interest since {formatDate(transaction.transactionDate)}:{' '}
+            Total interest {formatDate(transaction.transactionDate)} – {formatDate(interestEndDate)}:{' '}
             <span className="font-semibold" style={{ color: tokens.color.warning }}>
               {formatCurrency(totalInterestGeneratedCents)}
             </span>
