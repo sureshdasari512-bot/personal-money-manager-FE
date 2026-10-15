@@ -100,6 +100,50 @@ export interface TransactionInterestConfig {
   updatedBy: string | null;
 }
 
+/**
+ * One rate segment in the interest rate history log.
+ * effectiveFrom is inclusive, effectiveTo is exclusive (null = still active).
+ */
+export interface InterestRateHistory {
+  id: string;
+  transactionId: string;
+  userId: string;
+  interestRateBps: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+/**
+ * One accrual segment where both the rate and the outstanding principal
+ * were constant. periodStartDate is inclusive; periodEndDate is exclusive (null = open).
+ */
+export interface InterestAccrual {
+  id: string;
+  transactionId: string;
+  userId: string;
+  periodStartDate: string;
+  periodEndDate: string | null;
+  openingBalanceCents: number;
+  interestRateBps: number;
+  daysCount: number;
+  dailyInterestCents: number;
+  accruedInterestCents: number;
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+/** Response from GET /transactions/:id/interest-config/history */
+export interface InterestRateHistoryResponse {
+  rateHistory: InterestRateHistory[];
+  accruals: InterestAccrual[];
+}
+
 export interface LedgerTransaction extends Transaction {
   outstandingCents: number;
   accruedInterestCents: number;

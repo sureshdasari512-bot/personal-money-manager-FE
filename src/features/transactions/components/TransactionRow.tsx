@@ -15,6 +15,7 @@ import { todayIsoDate } from '../../../lib/todayIsoDate';
 import type { FieldErrors } from '../../../types/errors';
 import type { InterestConfigPayload, LedgerTransaction, Repayment } from '../types';
 import { InterestConfigForm } from '../../interest/components/InterestConfigForm';
+import { InterestRateHistoryView } from '../../interest/components/InterestRateHistoryView';
 
 interface TransactionRowProps {
   transaction: LedgerTransaction;
@@ -208,6 +209,16 @@ export function TransactionRow({
               {formatCurrency(totalInterestGeneratedCents)}
             </span>
           </p>
+        ) : null}
+
+        {/* ── Interest rate history — only shown when a rate change has occurred ── */}
+        {hasInterest ? (
+          <div className="mt-3">
+            <InterestRateHistoryView
+              transactionId={transaction.id}
+              repayments={transaction.repayments}
+            />
+          </div>
         ) : null}
 
         {/* ── Action buttons ── */}
